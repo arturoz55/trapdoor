@@ -1,0 +1,3985 @@
+<!doctype html><html><head><meta charset=utf8><title>trapdoor · decoding every funded Bitcoin wallet</title><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+/* ============================================================
+   tokens.css
+   Design tokens. Palette is lifted from the brand mark: near-black graphite,
+   electric blue gradient, one white. Two status hues only: computable vs locked.
+   ============================================================ */
+:root {
+  --bg: #0d0509;
+  --bg-raise: #150810;
+  --bg-panel: #180a13;
+  --bg-inset: #1b0c16;
+
+  --line: #33101f;
+  --line-soft: #240b16;
+  --line-strong: #4a1830;
+
+  --blue-deep: #b3125f;
+  --blue: #ff2e91;
+  --blue-hi: #ff8fc7;
+  --blue-dim: rgba(255, 46, 145, .14);
+  --blue-glow: rgba(255, 46, 145, .32);
+
+  --mint: #5dffb0;
+  --amber: #e8c547;
+  --hot: #ff4757;
+  --pop: #f7931a;
+  --pop-dim: rgba(247, 147, 26, .14);
+  --pop-glow: rgba(247, 147, 26, .32);
+
+  --ink: #fbeaf1;
+  --ink-2: #cf9fb5;
+  --ink-3: #93677d;
+  --ink-4: #5c3c4c;
+
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --shell: 1240px;
+  --gut: clamp(18px, 4vw, 40px);
+
+  --step--1: clamp(11px, .68rem + .1vw, 12.5px);
+  --step-0: clamp(14px, .86rem + .15vw, 16px);
+  --step-1: clamp(17px, 1rem + .35vw, 20px);
+  --step-2: clamp(21px, 1.15rem + .8vw, 28px);
+  --step-3: clamp(27px, 1.4rem + 1.6vw, 42px);
+  --step-4: clamp(34px, 1.6rem + 3.4vw, 76px);
+
+  --ease: cubic-bezier(.22, .61, .36, 1);
+  --shadow: 0 30px 80px -30px rgba(0, 0, 0, .9);
+  --cut: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+
+/* ============================================================
+   base.css
+   ============================================================ */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 90px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient field: one blue bloom behind the fold plus a hairline grid. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(1100px 620px at 50% -12%, rgba(255, 46, 145, .17), transparent 70%),
+    radial-gradient(680px 480px at 100% 6%, rgba(247, 147, 26, .08), transparent 72%),
+    linear-gradient(var(--line-soft) 1px, transparent 1px) 0 0 / 100% 64px,
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px) 0 0 / 64px 100%;
+  opacity: .9;
+  mask-image: linear-gradient(#000 0, #000 65%, rgba(0, 0, 0, .55) 100%);
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -.028em;
+}
+
+h1 { font-size: var(--step-4); }
+h2 { font-size: var(--step-3); }
+h3 { font-size: var(--step-1); letter-spacing: -.018em; }
+
+p { margin: 0; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+input, select {
+  font: inherit;
+  color: inherit;
+}
+
+canvas { display: block; }
+
+img, svg { display: block; max-width: 100%; }
+
+code, .mono, kbd {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+
+::selection {
+  background: var(--blue);
+  color: #02060f;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue-hi);
+  outline-offset: 3px;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.skip {
+  position: absolute;
+  top: -60px;
+  left: 16px;
+  z-index: 99;
+  padding: 10px 16px;
+  background: var(--blue);
+  color: #02060f;
+  font: 600 12px/1 var(--font-mono);
+  transition: top .2s var(--ease);
+}
+
+.skip:focus { top: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+/* ============================================================
+   layout.css
+   ============================================================ */
+.shell {
+  width: min(var(--shell), 100% - var(--gut) * 2);
+  margin-inline: auto;
+}
+
+/* ---------- header ---------- */
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid transparent;
+  transition: background .3s var(--ease), border-color .3s var(--ease), backdrop-filter .3s;
+}
+
+.masthead.is-stuck {
+  background: rgba(4, 6, 11, .82);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-bottom-color: var(--line);
+}
+
+.masthead__inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 74px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-right: auto;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+}
+
+/* One flex item, or the gap above would split the wordmark into "un 5 pent". */
+.brand__word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.brand__word i {
+  color: var(--blue-hi);
+  font-style: normal;
+}
+
+.brand__mark {
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+
+.brand__tag {
+  display: none;
+  padding-left: 12px;
+  margin-left: 2px;
+  border-left: 1px solid var(--line-strong);
+  color: var(--ink-3);
+  font: 500 10px/1.4 var(--font-mono);
+  font-style: normal;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+}
+
+.nav a {
+  padding: 8px 12px;
+  color: var(--ink-2);
+  font: 500 12.5px/1 var(--font-mono);
+  letter-spacing: .01em;
+  border: 1px solid transparent;
+  transition: color .2s, border-color .2s, background .2s;
+}
+
+.nav a:hover,
+.nav a.is-active {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--bg-raise);
+}
+
+.masthead__side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-link {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  transition: .2s var(--ease);
+}
+
+.icon-link:hover {
+  color: var(--blue-hi);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.icon-link svg { width: 16px; height: 16px; }
+
+.xlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  width: auto;
+  padding: 0 13px;
+}
+
+.xlink__handle {
+  font: 500 12.5px/1 var(--font-mono);
+  letter-spacing: .01em;
+}
+
+@media (max-width: 1180px) {
+  .xlink__handle { display: none; }
+  .xlink { width: 36px; padding: 0; }
+}
+
+.nav-toggle {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.nav-toggle i {
+  display: block;
+  width: 15px;
+  height: 1.5px;
+  margin: 3px auto;
+  background: currentColor;
+  transition: .25s var(--ease);
+}
+
+/* ---------- wallet connect ---------- */
+
+.wc { position: relative; }
+
+.wc__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-raise);
+  color: var(--ink);
+  font: 500 11.5px/1 var(--font-mono);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  clip-path: var(--cut);
+  transition: .2s var(--ease);
+}
+
+.wc__btn:hover { border-color: var(--blue); background: var(--blue-dim); }
+
+.wc__btn.is-connected { border-color: var(--mint); color: var(--mint); }
+
+.wc__dot {
+  display: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 0 3px rgba(93, 255, 176, .16);
+  flex: none;
+}
+
+.wc__btn.is-connected .wc__dot { display: inline-block; }
+
+.wc__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: 220px;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  background: rgba(6, 9, 15, .97);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+}
+
+.wc__opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+  font: 500 12.5px/1 var(--font-display);
+  color: var(--ink-2);
+  transition: .15s;
+}
+
+.wc__opt:hover { background: var(--bg-inset); color: var(--ink); }
+
+.wc__icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 5px;
+  font: 700 10px/1 var(--font-display);
+  color: #fff;
+}
+
+.wc__addr {
+  margin-bottom: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  font: 400 11px/1.4 var(--font-mono);
+  color: var(--blue-hi);
+  word-break: break-all;
+}
+
+.wc__note {
+  margin-top: 2px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line-soft);
+  font: 400 11px/1.5 var(--font-mono);
+  color: var(--ink-3);
+}
+
+@media (max-width: 640px) {
+  .wc__btn { padding: 0 10px; }
+  .wc__btn span[data-wc-label] { display: none; }
+}
+
+/* ---------- section rhythm ---------- */
+
+.band {
+  position: relative;
+  padding: clamp(64px, 9vw, 122px) 0;
+}
+
+.band + .band { border-top: 1px solid var(--line-soft); }
+
+.band--inset { background: linear-gradient(180deg, rgba(9, 13, 22, .7), rgba(4, 6, 11, 0)); }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 20px;
+  color: var(--blue-hi);
+  font: 500 var(--step--1) / 1 var(--font-mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--blue));
+}
+
+.band__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  gap: clamp(20px, 4vw, 56px);
+  align-items: end;
+  margin-bottom: clamp(32px, 4vw, 56px);
+}
+
+.band__head p {
+  color: var(--ink-2);
+  font-size: var(--step-0);
+  max-width: 52ch;
+}
+
+.lede {
+  color: var(--ink-2);
+  font-size: var(--step-1);
+  line-height: 1.62;
+  max-width: 64ch;
+}
+
+/* ---------- footer ---------- */
+
+.footer {
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(4, 6, 11, 0), rgba(9, 13, 22, .85));
+  padding: 56px 0 34px;
+}
+
+.footer__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  gap: 40px;
+}
+
+.footer__grid h4 {
+  margin-bottom: 14px;
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.footer__links {
+  display: grid;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.footer__links a { transition: color .2s; }
+.footer__links a:hover { color: var(--blue-hi); }
+
+.footer__note {
+  max-width: 44ch;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.footer__base {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  justify-content: space-between;
+  margin-top: 46px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--ink-4);
+  font: 400 11.5px/1.5 var(--font-mono);
+}
+
+/* ---------- reveal ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .7s var(--ease), transform .7s var(--ease);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal[data-delay="1"] { transition-delay: .08s; }
+.reveal[data-delay="2"] { transition-delay: .16s; }
+.reveal[data-delay="3"] { transition-delay: .24s; }
+.reveal[data-delay="4"] { transition-delay: .32s; }
+
+@media (max-width: 1080px) {
+  .brand__tag { display: none; }
+  .nav {
+    position: fixed;
+    inset: 74px 0 auto;
+    display: grid;
+    gap: 2px;
+    padding: 14px var(--gut) 22px;
+    background: rgba(4, 6, 11, .97);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    transform: translateY(-12px);
+    opacity: 0;
+    pointer-events: none;
+    transition: .25s var(--ease);
+  }
+  .nav.is-open {
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .nav a {
+    padding: 13px 12px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav-toggle { display: block; }
+  .nav-toggle.is-open i:first-child { transform: translateY(4.5px) rotate(45deg); }
+  .nav-toggle.is-open i:nth-child(2) { opacity: 0; }
+  .nav-toggle.is-open i:last-child { transform: translateY(-4.5px) rotate(-45deg); }
+}
+
+@media (min-width: 1300px) {
+  .brand__tag { display: block; }
+}
+
+@media (max-width: 860px) {
+  .band__head {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .footer__grid { grid-template-columns: 1fr 1fr; }
+  .footer__grid > :first-child { grid-column: 1 / -1; }
+}
+
+/* ============================================================
+   components.css
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-raise);
+  color: var(--ink);
+  font: 500 12.5px/1 var(--font-mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transition: .22s var(--ease);
+}
+
+.btn:hover {
+  border-color: var(--blue);
+  background: var(--blue-dim);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.btn--primary {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--blue-deep), var(--blue) 55%, var(--blue-hi));
+  color: #01050f;
+  font-weight: 700;
+  box-shadow: 0 14px 40px -16px var(--blue-glow);
+}
+
+.btn--primary:hover {
+  background: linear-gradient(120deg, var(--blue), var(--blue-hi));
+  box-shadow: 0 18px 48px -14px var(--blue-glow);
+}
+
+.btn--ghost { background: transparent; }
+
+.btn--sm {
+  padding: 9px 14px;
+  font-size: 11px;
+}
+
+.panel {
+  position: relative;
+  background: linear-gradient(170deg, rgba(14, 20, 32, .9), rgba(7, 10, 17, .92));
+  border: 1px solid var(--line);
+}
+
+.panel--cut { clip-path: var(--cut); }
+
+.panel--pad { padding: clamp(20px, 2.4vw, 30px); }
+
+.panel__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font: 500 10px/1.4 var(--font-mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue-hi);
+  box-shadow: 0 0 0 3px rgba(255, 143, 199, .2);
+  animation: pulse 1.8s var(--ease) infinite;
+}
+
+.dot--mint { background: var(--mint); box-shadow: 0 0 0 3px rgba(93, 255, 176, .16); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  font: 500 9.5px/1.3 var(--font-mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.badge--computable { color: var(--mint); background: rgba(93, 255, 176, .1); }
+.badge--locked { color: var(--ink-3); background: rgba(107, 125, 148, .07); }
+
+.stat {
+  padding: 18px 20px;
+  border-left: 1px solid var(--line);
+}
+
+.stat__k {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--ink-4);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.stat__v {
+  display: block;
+  font-size: var(--step-2);
+  font-weight: 700;
+  letter-spacing: -.035em;
+  line-height: 1;
+}
+
+.stat__v em {
+  margin-left: 5px;
+  font-style: normal;
+  font-size: .5em;
+  letter-spacing: 0;
+  color: var(--ink-3);
+}
+
+.stat__sub {
+  display: block;
+  margin-top: 7px;
+  color: var(--ink-3);
+  font: 400 11px/1.45 var(--font-mono);
+}
+
+.num { font-variant-numeric: tabular-nums; }
+
+.meter {
+  position: relative;
+  height: 6px;
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.meter i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  width: 0;
+  background: linear-gradient(90deg, var(--blue-deep), var(--blue-hi));
+  transition: width .7s var(--ease);
+}
+
+.meter--mint i { background: linear-gradient(90deg, #1b8f61, var(--mint)); }
+.meter--warm i { background: linear-gradient(90deg, #b8791f, var(--amber)); }
+.meter--hot i { background: linear-gradient(90deg, #a8321f, var(--hot)); }
+
+.usd-slot {
+  color: var(--ink-4);
+  font: 400 11.5px/1 var(--font-mono);
+  letter-spacing: .02em;
+}
+
+.usd-slot:not(:empty) { margin-left: 9px; }
+
+.blue { color: var(--blue-hi); }
+.mint { color: var(--mint); }
+.muted { color: var(--ink-3); }
+
+.kv {
+  display: grid;
+  grid-template-columns: minmax(0, 118px) minmax(0, 1fr);
+  gap: 10px 18px;
+  font: 400 13px/1.55 var(--font-mono);
+}
+
+.kv dt {
+  color: var(--ink-4);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding-top: 3px;
+}
+
+.kv dd {
+  margin: 0;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.addr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+  text-align: left;
+  transition: .2s var(--ease);
+}
+
+.addr:hover { border-color: var(--blue); background: rgba(255, 46, 145, .08); }
+
+.addr code {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--blue-hi);
+  overflow-wrap: anywhere;
+}
+
+.addr__hint {
+  flex: none;
+  color: var(--ink-4);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.addr.is-copied { border-color: var(--mint); }
+.addr.is-copied .addr__hint { color: var(--mint); }
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field > label {
+  color: var(--ink-4);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.field select,
+.field input {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  transition: border-color .2s;
+  appearance: none;
+}
+
+.field select:focus,
+.field input:focus {
+  border-color: var(--blue);
+  outline: none;
+}
+
+.field select {
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.chip {
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  background: var(--bg-raise);
+  color: var(--ink-2);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: .06em;
+  transition: .2s var(--ease);
+}
+
+.chip:hover { color: var(--ink); border-color: var(--line-strong); }
+
+.chip.is-on {
+  border-color: var(--blue);
+  background: var(--blue-dim);
+  color: var(--blue-hi);
+}
+
+.chip b {
+  margin-left: 6px;
+  color: var(--ink-4);
+  font-weight: 500;
+}
+
+.chip.is-on b { color: var(--blue); }
+
+.qa {
+  border-top: 1px solid var(--line);
+}
+
+.qa:last-child { border-bottom: 1px solid var(--line); }
+
+.qa__q {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  padding: 22px 4px;
+  text-align: left;
+  font-size: var(--step-1);
+  font-weight: 500;
+  letter-spacing: -.015em;
+  transition: color .2s;
+}
+
+.qa__q:hover { color: var(--blue-hi); }
+
+.qa__q i {
+  flex: none;
+  position: relative;
+  width: 13px;
+  height: 13px;
+  margin-left: auto;
+  color: var(--blue);
+}
+
+.qa__q i::before,
+.qa__q i::after {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 1.5px;
+  background: currentColor;
+  transition: transform .25s var(--ease);
+}
+
+.qa__q i::after { transform: rotate(90deg); }
+.qa.is-open .qa__q i::after { transform: rotate(0); }
+
+.qa__a {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .32s var(--ease);
+}
+
+.qa.is-open .qa__a { grid-template-rows: 1fr; }
+
+.qa__a > div {
+  overflow: hidden;
+  color: var(--ink-2);
+  line-height: 1.68;
+}
+
+.qa__a p { padding-bottom: 24px; max-width: 78ch; }
+.qa__a p + p { padding-top: 0; margin-top: -10px; }
+
+.hr-fade {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--line-strong) 20%, var(--line-strong) 80%, transparent);
+}
+
+.scramble { font-variant-ligatures: none; }
+
+.tip {
+  color: var(--ink-4);
+  font: 400 11.5px/1.6 var(--font-mono);
+}
+
+.link-arrow {
+  color: var(--blue-hi);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: .04em;
+  border-bottom: 1px solid rgba(255, 143, 199, .4);
+  padding-bottom: 2px;
+  transition: .2s;
+}
+
+.link-arrow:hover { border-bottom-color: var(--blue-hi); }
+
+/* ============================================================
+   sections.css
+   ============================================================ */
+.hero {
+  position: relative;
+  padding: clamp(46px, 7vw, 92px) 0 0;
+  overflow: hidden;
+}
+
+.hero__canvas {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  opacity: .5;
+  mask-image: radial-gradient(120% 90% at 50% 26%, #000 20%, transparent 78%);
+}
+
+.hero__inner {
+  padding-bottom: clamp(44px, 6vw, 76px);
+}
+
+.hero h1 {
+  margin: 0 0 30px;
+  max-width: 22ch;
+  font-size: min(clamp(34px, 1.5rem + 4.3vw, 90px), 9.2vw);
+}
+
+.hero .lede { max-width: 74ch; }
+
+.hero h1 .flip {
+  display: block;
+  white-space: nowrap;
+  background: linear-gradient(104deg, var(--blue-deep), var(--blue) 35%, var(--blue-hi) 62%, var(--pop) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: flipShimmer 7s ease-in-out infinite;
+}
+
+@keyframes flipShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  margin-top: 34px;
+}
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(9, 13, 22, .78), rgba(4, 6, 11, .4));
+}
+
+.strip--fleet {
+  grid-template-columns: 1fr 1fr 2fr;
+}
+
+.strip--fleet .stat__v--wide {
+  font-size: clamp(22px, 1.1rem + 1.6vw, 34px);
+  letter-spacing: -.05em;
+  white-space: nowrap;
+}
+
+.strip .stat:first-child { border-left: 0; }
+
+.fleet__chart { margin-top: 18px; }
+
+.fleet__spark {
+  position: relative;
+  height: clamp(120px, 15vw, 190px);
+  padding: 14px 16px 4px;
+}
+
+.fleet__spark canvas { width: 100%; height: 100%; }
+
+.fleet__read {
+  display: grid;
+  gap: 8px;
+  padding: 16px clamp(16px, 2vw, 22px) 20px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.fleet__grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.rig.is-stale { opacity: .48; }
+.rig.is-stale .dot { animation: none; background: var(--ink-4); box-shadow: none; }
+
+.rig__id {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+}
+
+.rig__id b {
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: none;
+}
+
+.rig__toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue-hi);
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.rig__toggle:hover { color: var(--ink); }
+
+.rig__hw {
+  text-transform: none;
+  letter-spacing: .04em;
+  color: var(--ink-3);
+}
+
+.rig__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.rig__stats > div {
+  padding: 16px 18px 18px;
+  border-right: 1px solid var(--line);
+}
+
+.rig__stats > div:last-child { border-right: 0; }
+
+.rig__stats small {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink-4);
+  font: 500 9px/1 var(--font-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.rig__stats b {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  line-height: 1;
+}
+
+.rig__stats b em {
+  margin-left: 5px;
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  color: var(--ink-3);
+}
+
+.rig-gpus { padding: 10px 18px 14px; }
+
+.gpu {
+  display: grid;
+  grid-template-columns: 28px minmax(72px, 1.4fr) 44px 52px 52px 44px 72px 92px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-2);
+  font: 400 12px/1 var(--font-mono);
+}
+
+.gpu:last-child { border-bottom: 0; }
+
+.gpu--head {
+  padding-bottom: 8px;
+  color: var(--ink-4);
+  font: 500 9px/1 var(--font-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+
+.gpu__i { color: var(--ink-4); }
+.gpu__t { color: var(--ink); }
+.gpu__c, .gpu__m { color: var(--ink-3); text-align: right; }
+
+.primer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.primer article {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 26px 26px 30px;
+}
+
+.primer__n {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--blue);
+  font: 700 12px/1 var(--font-mono);
+  letter-spacing: .14em;
+}
+
+.primer__n::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line-strong), transparent);
+}
+
+.primer h3 { max-width: 22ch; }
+
+.primer p {
+  color: var(--ink-2);
+  font-size: 14.5px;
+  line-height: 1.68;
+}
+
+.primer b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.flow {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  counter-reset: flow;
+}
+
+.flow::before {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 34px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong) 8%, var(--line-strong) 92%, transparent);
+}
+
+.flow::after {
+  content: "";
+  position: absolute;
+  top: 32px;
+  left: 4%;
+  width: 84px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--blue-hi));
+  filter: blur(.4px);
+  animation: flowPulse 5.2s linear infinite;
+}
+
+@keyframes flowPulse {
+  0% { transform: translateX(0); opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateX(min(1050px, 88vw)); opacity: 0; }
+}
+
+.flow__step {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.flow__dot {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel);
+  color: var(--blue-hi);
+}
+
+.flow__dot svg { width: 26px; height: 26px; }
+
+.flow__step h3 {
+  font-size: 15.5px;
+  letter-spacing: -.01em;
+  min-height: 2.1em;
+}
+
+.flow__step h3::before {
+  counter-increment: flow;
+  content: "0" counter(flow) " / ";
+  color: var(--ink-4);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: .1em;
+}
+
+.flow__step p {
+  color: var(--ink-3);
+  font-size: 13.5px;
+  line-height: 1.62;
+}
+
+.flow__note {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-top: 42px;
+  padding: 18px 20px;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-3);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.flow__note b { color: var(--ink); font-weight: 500; }
+
+.board__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18px;
+}
+
+.board__meta {
+  color: var(--ink-4);
+  font: 400 11.5px/1.5 var(--font-mono);
+  letter-spacing: .04em;
+}
+
+.board__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+}
+
+.tile {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 13px 13px 14px;
+  border: 1px solid var(--line);
+  background: linear-gradient(165deg, rgba(13, 19, 30, .8), rgba(6, 9, 15, .9));
+  text-align: left;
+  overflow: hidden;
+  transition: .2s var(--ease);
+}
+
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: var(--line-strong);
+  transition: .25s var(--ease);
+}
+
+.tile:hover {
+  transform: translateY(-3px) scale(1.03);
+  border-color: var(--line-strong);
+  z-index: 2;
+}
+
+.tile__n {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -.04em;
+  line-height: 1;
+}
+
+.tile__n small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: 0;
+}
+
+.tile__btc {
+  font: 500 12px/1 var(--font-mono);
+  color: var(--ink-2);
+}
+
+.tile__bits {
+  font: 400 10px/1.3 var(--font-mono);
+  color: var(--ink-4);
+  letter-spacing: .06em;
+}
+
+.tile--computable::after { background: linear-gradient(90deg, var(--mint), rgba(93, 255, 176, .2)); }
+.tile--computable .tile__n { color: #dffff0; }
+.tile--computable {
+  border-color: rgba(93, 255, 176, .34);
+  background: linear-gradient(165deg, rgba(14, 33, 27, .9), rgba(6, 12, 11, .92));
+}
+.tile--computable:hover { border-color: var(--mint); }
+
+.tile.is-active {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 1px var(--blue), 0 14px 40px -18px var(--blue-glow);
+}
+
+.tile__flag {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 5px;
+  height: 5px;
+  background: var(--mint);
+  box-shadow: 0 0 8px var(--mint);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(460px, 100%);
+  height: 100%;
+  background: rgba(6, 9, 15, .97);
+  backdrop-filter: blur(18px);
+  border-left: 1px solid var(--line-strong);
+  box-shadow: var(--shadow);
+  transform: translateX(102%);
+  transition: transform .38s var(--ease);
+}
+
+.drawer.is-open { transform: none; }
+
+.drawer__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer__head h3 {
+  font-size: 30px;
+  letter-spacing: -.04em;
+}
+
+.drawer__head p {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font: 400 11.5px/1.4 var(--font-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.drawer__close {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1;
+  transition: .2s;
+}
+
+.drawer__close:hover { color: var(--ink); border-color: var(--blue); }
+
+.drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 24px 30px;
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+
+.drawer__body section { display: grid; gap: 11px; }
+
+.drawer__body h4 {
+  color: var(--ink-4);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.drawer__bounty {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+}
+
+.drawer__bounty b {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -.035em;
+}
+
+.drawer__bounty span {
+  color: var(--ink-3);
+  font: 400 12.5px/1 var(--font-mono);
+}
+
+.verify {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+  font: 400 12px/1.4 var(--font-mono);
+  color: var(--ink-2);
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(2, 4, 8, .6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+
+.scrim.is-on { opacity: 1; pointer-events: auto; }
+
+.kang {
+  display: grid;
+  grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+  gap: clamp(26px, 4vw, 54px);
+  align-items: center;
+}
+
+.kang__viz { padding: 0; }
+
+.kang__stage {
+  position: relative;
+  height: clamp(240px, 32vw, 330px);
+}
+
+.kang__stage canvas { width: 100%; height: 100%; }
+
+.kang__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 13px 18px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  font: 400 11px/1 var(--font-mono);
+  letter-spacing: .04em;
+}
+
+.kang__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.kang__legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.kang__copy p + p { margin-top: 16px; }
+
+.kang__copy p {
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+
+.kang__copy b { color: var(--ink); font-weight: 500; }
+
+.contrast {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 26px;
+  border: 1px solid var(--line);
+}
+
+.contrast > div { padding: 18px 20px; }
+.contrast > div + div { border-left: 1px solid var(--line); }
+
+.contrast small {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--ink-4);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.contrast b {
+  display: block;
+  font-size: var(--step-1);
+  letter-spacing: -.03em;
+}
+
+.contrast p {
+  margin-top: 8px;
+  color: var(--ink-3);
+  font: 400 11.5px/1.5 var(--font-mono);
+}
+
+.timeline {
+  display: grid;
+  gap: 0;
+  border-left: 1px solid var(--line);
+  padding-left: 0;
+  margin-left: 6px;
+}
+
+.timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 8px 28px;
+  padding: 18px 0 18px 30px;
+  list-style: none;
+}
+
+.timeline li + li { border-top: 1px solid var(--line-soft); }
+
+.timeline li::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 25px;
+  width: 7px;
+  height: 7px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+}
+
+.timeline li[data-key="1"]::before {
+  background: var(--blue);
+  border-color: var(--blue);
+  box-shadow: 0 0 12px var(--blue-glow);
+}
+
+.timeline time {
+  color: var(--ink-4);
+  font: 500 11.5px/1.7 var(--font-mono);
+  letter-spacing: .06em;
+}
+
+.timeline p {
+  color: var(--ink-2);
+  font-size: 14.5px;
+  line-height: 1.62;
+}
+
+.timeline p b { color: var(--ink); font-weight: 500; }
+
+.timeline blockquote {
+  margin: 12px 0 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--line-strong);
+  color: var(--ink-3);
+  font-size: 13.5px;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.wallet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: clamp(26px, 4vw, 56px);
+  align-items: start;
+}
+
+.wallet__card { padding: clamp(22px, 2.6vw, 32px); }
+
+.wallet__rows {
+  display: grid;
+  gap: 1px;
+  margin-top: 20px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.wallet__rows > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: space-between;
+  padding: 13px 16px;
+  background: var(--bg-panel);
+  font: 400 12.5px/1.5 var(--font-mono);
+  color: var(--ink-2);
+}
+
+.wallet__rows span:first-child {
+  color: var(--ink-4);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding-top: 3px;
+}
+
+.wallet__rows b { font-weight: 500; color: var(--ink); }
+
+@media (max-width: 1080px) {
+  .primer { grid-template-columns: 1fr; }
+  .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .flow::before, .flow::after { display: none; }
+  .kang { grid-template-columns: 1fr; }
+  .wallet { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .strip { grid-template-columns: 1fr 1fr; }
+  .strip--fleet { grid-template-columns: 1fr 1fr; }
+  .strip--fleet .stat:last-child { grid-column: 1 / -1; }
+  .strip--fleet .stat__v--wide { white-space: normal; }
+  .gpu { grid-template-columns: 22px minmax(56px, 1fr) 40px 48px 48px; }
+  .gpu__f, .gpu__c, .gpu__m { display: none; }
+  .gpu--head span:nth-child(n+6) { display: none; }
+  .rig__stats { grid-template-columns: 1fr 1fr; }
+  .rig__stats > div { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .rig__stats > div:nth-child(2n) { border-right: 0; }
+  .strip .stat:nth-child(3) { border-left: 0; }
+  .strip .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .flow { grid-template-columns: 1fr; gap: 20px; }
+  .flow__dot { width: 52px; height: 52px; }
+  .board__grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  .contrast { grid-template-columns: 1fr; }
+  .contrast > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .timeline li { grid-template-columns: 1fr; gap: 4px; padding-left: 22px; }
+  .hero__cta .btn { flex: 1 1 100%; }
+}
+</style>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <linearGradient id="logo-grad" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" style="stop-color:var(--blue-deep)"/>
+      <stop offset="55%" style="stop-color:var(--blue)"/>
+      <stop offset="100%" style="stop-color:var(--pop)"/>
+    </linearGradient>
+    <symbol id="logo-icon" viewBox="0 0 40 40">
+      <polygon points="1,1 29,1 39,11 39,39 1,39" fill="var(--bg-panel)" stroke="var(--line-strong)" stroke-width="1.4"/>
+      <path d="M14 18 V12.5 A6 6 0 0 1 26 12.5 V16" fill="none" stroke="var(--blue-hi)" stroke-width="2.6" stroke-linecap="round"/>
+      <rect x="10.5" y="18" width="19" height="15" rx="2.6" fill="url(#logo-grad)"/>
+      <circle cx="20" cy="24" r="2.1" fill="var(--bg-panel)"/>
+      <path d="M18.9 25.3 H21.1 L20.4 29.4 H19.6 Z" fill="var(--bg-panel)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="masthead">
+  <div class="shell masthead__inner">
+    <a class="brand" href="#top" aria-label="trapdoor home">
+      <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true"><use href="#logo-icon"></use></svg>
+      <span class="brand__word">trapdoor</span>
+      <em class="brand__tag">unsolved keys / public wallet</em>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="Sections">
+      <a href="#setup">The setup</a>
+      <a href="#engine">Fee engine</a>
+      <a href="#fleet" data-nav-fleet>Fleet</a>
+      <a href="#board">The board</a>
+      <a href="#maths">The maths</a>
+      <a href="#wallet">Wallet</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="masthead__side">
+      <a class="icon-link xlink" data-social-x href="#" target="_blank" rel="noopener" aria-label="trapdoor on X">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <span class="xlink__handle" data-x-handle>@trapdoor</span>
+      </a>
+
+      <div class="wc" data-wc>
+        <button class="wc__btn" type="button" data-wc-btn aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="15" height="15" aria-hidden="true"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M3 10h18"/><circle cx="16" cy="14.5" r="1.3" fill="currentColor" stroke="none"/></svg>
+          <span data-wc-label>Connect Wallet</span>
+          <i class="wc__dot" aria-hidden="true"></i>
+        </button>
+        <div class="wc__menu" data-wc-menu role="menu" hidden>
+          <div data-wc-picker>
+            <button class="wc__opt" type="button" data-wc-provider="metamask" role="menuitem">
+              <span class="wc__icon" style="background:#f6851b">M</span> MetaMask
+            </button>
+            <button class="wc__opt" type="button" data-wc-provider="phantom" role="menuitem">
+              <span class="wc__icon" style="background:#ab9ff2">P</span> Phantom
+            </button>
+            <button class="wc__opt" type="button" data-wc-provider="coinbase" role="menuitem">
+              <span class="wc__icon" style="background:#0052ff">C</span> Coinbase Wallet
+            </button>
+          </div>
+          <div data-wc-connected hidden>
+            <div class="wc__addr"><code data-wc-full></code></div>
+            <button class="wc__opt" type="button" data-wc-copy role="menuitem">Copy address</button>
+            <button class="wc__opt" type="button" data-wc-disconnect role="menuitem">Disconnect</button>
+          </div>
+          <p class="wc__note" data-wc-note hidden></p>
+        </div>
+      </div>
+
+      <button class="nav-toggle" type="button" aria-controls="nav" aria-expanded="false" aria-label="Menu">
+        <i></i><i></i><i></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<span id="top"></span>
+
+<!-- ============================ hero ============================ -->
+<section class="hero">
+  <canvas class="hero__canvas" data-hero-canvas aria-hidden="true"></canvas>
+
+  <div class="shell hero__inner">
+    <h1>
+      Every funded<br>Bitcoin wallet.
+      <span class="flip" data-decode>Decoded with fees.</span>
+    </h1>
+
+    <p class="lede">
+      77 unsolved Bitcoin addresses. 903 BTC locked behind unknown private keys.
+<br><br>
+trapdoor turns trading fees into GPU compute to search for those keys, starting with the five puzzles where the odds make the most sense. At the same time, every generated key is checked against our database of 100M+ funded Bitcoin addresses, giving each search a second purpose.
+<br><br>
+Fees &rarr; Compute &rarr; Search &rarr; Match
+    </p>
+
+    <div class="hero__cta">
+      <a class="btn btn--primary" href="#fleet">Check Live Fleet</a>
+      <a class="btn btn--ghost" href="#engine">How the engine works</a>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="strip">
+      <div class="stat">
+        <span class="stat__k">Targets left</span>
+        <b class="stat__v num"><span data-count="77">77</span></b>
+        <span class="stat__sub">puzzles #71 &rarr; #160</span>
+      </div>
+      <div class="stat">
+        <span class="stat__k">BTC unclaimed</span>
+        <b class="stat__v num blue"><span data-count="903">903</span></b>
+        <span class="stat__sub"><span class="usd-slot" data-btc="903"></span><span hidden data-price-live>at <span data-btc-price></span>/BTC</span></span>
+      </div>
+      <div class="stat">
+        <span class="stat__k">Solvable by maths</span>
+        <b class="stat__v num mint"><span data-count="5">5</span></b>
+        <span class="stat__sub">public key already leaked</span>
+      </div>
+      <div class="stat">
+        <span class="stat__k">Funded by</span>
+        <b class="stat__v">Fees</b>
+        <span class="stat__sub">into one public wallet</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ setup ============================ -->
+<section class="band" id="setup">
+  <div class="shell">
+    <div class="band__head">
+      <div>
+        <span class="eyebrow">The setup</span>
+        <h2 data-decode>Real Bitcoin, locked behind arithmetic.</h2>
+      </div>
+      <p>Three facts explain the entire project. None of them require you to trust anybody, including us.</p>
+    </div>
+
+    <div class="primer">
+      <article class="panel panel--cut reveal">
+        <span class="primer__n">01</span>
+        <h3>Someone hid keys on purpose</h3>
+        <p>
+          In January 2015, a person known as <b>saatoshi_rising</b> funded 160 Bitcoin addresses in one
+          transaction. The private key of puzzle #1 sat in a 1-bit range, #2 in a 2-bit range, and every
+          step after that doubled. Puzzles up to #70 have all been cracked. In April 2023 the creator
+          multiplied the remaining prizes by ten, which is why #140 now holds 14 BTC. Those coins have
+          never moved.
+        </p>
+      </article>
+
+      <article class="panel panel--cut reveal" data-delay="1">
+        <span class="primer__n">02</span>
+        <h3>Five of them leaked the shape of the answer</h3>
+        <p>
+          An address is only a hash of a public key, so normally you learn nothing from it. But in May 2019
+            the creator spent 1,000 satoshis out of #140, #145, #150, #155 and #160, and a spend publishes
+            the public key. With that key in hand the hunt stops being a guessing game and becomes a
+          computation: about <b>the square root</b> of the range instead of the whole range.
+        </p>
+      </article>
+
+      <article class="panel panel--cut reveal" data-delay="2">
+        <span class="primer__n">03</span>
+        <h3>Compute is the only input</h3>
+        <p>
+          There is no product here and nothing to believe in. Trading fees land in one public wallet, that
+          wallet buys GPU hours, and those hours walk a keyspace. If a key falls out, the Bitcoin is real
+          and the transaction is visible to everyone at the same moment. If it doesn't, the wallet still
+          shows exactly where every dollar went.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ engine ============================ -->
+<section class="band band--inset" id="engine">
+  <div class="shell">
+    <div class="band__head">
+      <div>
+        <span class="eyebrow">Fee engine</span>
+        <h2 data-decode>Fees in, keyspace out.</h2>
+      </div>
+      <p>Five steps. Every one of them is something an outsider can check, which is the only reason to lay it out like this.</p>
+    </div>
+
+    <div class="flow">
+      <div class="flow__step reveal">
+        <div class="flow__dot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+        </div>
+        <h3>Trades happen</h3>
+        <p>Every trade on <span data-chain>Robinhood Chain</span> pays a fee. That fee is the project's only source of revenue.</p>
+      </div>
+
+      <div class="flow__step reveal" data-delay="1">
+        <div class="flow__dot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="17" cy="14.5" r="1.4"/></svg>
+        </div>
+        <h3>Fees pool in public</h3>
+        <p>They settle in a single address, <code class="mono">0x5c1a2e9&hellip;a6c5f80</code>, with no multisig story and nowhere to hide.</p>
+      </div>
+
+      <div class="flow__step reveal" data-delay="2">
+        <div class="flow__dot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.5 5.5l2.5 2.5M16 16l2.5 2.5M18.5 5.5L16 8M8 16l-2.5 2.5"/></svg>
+        </div>
+        <h3>Fees become GPU hours</h3>
+        <p>The balance is spent on rented compute, priced in GPU-hours. Nothing is manufactured; hardware is bought at market rate.</p>
+      </div>
+
+      <div class="flow__step reveal" data-delay="3">
+        <div class="flow__dot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M3 12h4l2-5 3 10 2.5-7 2 4h4.5"/></svg>
+        </div>
+        <h3>Compute takes a slice</h3>
+        <p>Each worker gets a slice of the target's interval and walks it with Kangaroo, or hashes it blind on the targets that never leaked a key.</p>
+      </div>
+
+      <div class="flow__step reveal" data-delay="4">
+        <div class="flow__dot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M17 12v4"/></svg>
+        </div>
+        <h3>A collision ends it</h3>
+        <p>Two herds land on the same point, the private key drops out of the difference, and the coins move on Bitcoin in front of everybody.</p>
+      </div>
+    </div>
+
+    <div class="flow__note reveal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="20" height="20" style="flex:none;margin-top:2px" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M12 11v5"/></svg>
+      <span>
+        <b>Nothing on this page is a mock-up.</b> The rigs below report their own readings, the board checks its
+        addresses against a public Bitcoin node, and the wallet is on-chain. Where a number cannot be verified yet,
+        it is not shown at all.
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ fleet ============================ -->
+<section class="band" id="fleet" data-fleet>
+  <div class="shell">
+    <div class="band__head">
+      <div>
+        <span class="eyebrow">Live fleet</span>
+        <h2 data-decode>The hardware, right now.</h2>
+      </div>
+      <p>
+        Every generated wallet is checked against a 100M+ entry Bloom filter containing funded addresses, including all unsolved BTC Puzzle wallets. When a match is found, the recovered BTC is converted to ETH and used to fund more GPUs and buybacks on the chart.
+      </p>
+    </div>
+
+    <div class="strip strip--fleet">
+      <div class="stat">
+        <span class="stat__k">Fleet throughput</span>
+        <b class="stat__v num blue" data-fleet-rate>0</b>
+        <span class="stat__sub" data-fleet-watts></span>
+      </div>
+      <div class="stat">
+        <span class="stat__k">GPUs online</span>
+        <b class="stat__v num" data-fleet-gpus>0</b>
+        <span class="stat__sub" data-fleet-nodes></span>
+      </div>
+      <div class="stat">
+        <span class="stat__k">Wallets generated per second</span>
+        <b class="stat__v stat__v--wide num mint" data-fleet-wallets>0</b>
+        <span class="stat__sub">live across the fleet</span>
+      </div>
+    </div>
+
+    <div class="panel panel--cut fleet__chart">
+      <div class="panel__label">
+        <span data-fleet-chart-label>Fleet throughput</span>
+        <span data-fleet-stamp></span>
+      </div>
+      <div class="fleet__spark">
+        <canvas data-fleet-spark aria-label="Line chart of total fleet throughput since this page was opened"></canvas>
+      </div>
+    </div>
+
+    <div class="fleet__grid" data-fleet-grid></div>
+
+    <p class="tip" data-fleet-empty hidden>
+      No rig has reported yet. Rows appear here within seconds of an agent starting on a box.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ board ============================ -->
+<section class="band" id="board">
+  <div class="shell">
+    <div class="band__head">
+      <div>
+        <span class="eyebrow">The board</span>
+        <h2 data-decode>77 unsolved targets.</h2>
+      </div>
+      <p>
+        Every tile is a live Bitcoin address. Open one for its exact key range, the attack it allows, and a
+        balance check straight from a public node. Board verified <span data-verified>2026-09-22</span>.
+      </p>
+    </div>
+
+    <div class="board__bar">
+      <div class="chips" data-board-filters role="group" aria-label="Filter targets"></div>
+      <div class="field" style="min-width:190px">
+        <label for="board-sort">Order</label>
+        <select id="board-sort" data-board-sort>
+          <option value="n">Puzzle number</option>
+          <option value="work">Least work first</option>
+          <option value="bounty">Biggest bounty first</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="board__meta" data-board-meta style="padding-bottom:16px"></p>
+    <div class="board__grid" data-board-grid></div>
+
+    <p class="tip" style="margin-top:18px">
+      <span style="display:inline-block;width:8px;height:8px;background:#5dffb0;vertical-align:1px"></span>
+      Green tiles leaked a public key in 2019 and can be attacked with Kangaroo. Everything else has to be
+      brute-forced, which is why the bounty on a tile tells you almost nothing about how hard it is.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ maths ============================ -->
+<section class="band band--inset" id="maths">
+  <div class="shell">
+    <div class="band__head">
+      <div>
+        <span class="eyebrow">Why only five</span>
+        <h2 data-decode>Hunting versus computing.</h2>
+      </div>
+      <p>The animation below is the actual algorithm, not a metaphor for it. Watch two herds walk until they step on the same point.</p>
+    </div>
+
+    <div class="kang">
+      <div class="panel panel--cut kang__viz reveal">
+        <div class="panel__label">
+          <span>Pollard's Kangaroo &middot; puzzle #140 interval</span>
+          <span><span data-kang-jumps class="num">0</span> hops</span>
+        </div>
+        <div class="kang__stage"><canvas data-kangaroo aria-label="Animation of two kangaroo herds walking a keyspace until they collide"></canvas></div>
+        <div class="kang__legend">
+          <span><i style="background:#ff8fc7"></i> tame herd, known start</span>
+          <span><i style="background:#5dffb0"></i> wild herd, starts on the target</span>
+          <span><i style="background:#4a1830;border-radius:0"></i> stored distinguished point</span>
+          <span>status: <b data-kang-status class="blue">herds walking</b></span>
+        </div>
+      </div>
+
+      <div class="kang__copy reveal" data-delay="1">
+        <p>
+          A blind puzzle leaves you one move: pick a key, hash it, compare it to the address, repeat.
+          #71 hides its key somewhere in 2<sup>70</sup> candidates, so you expect to try about
+          <b>590 billion billion</b> of them before one matches.
+        </p>
+        <p>
+          A puzzle with an exposed public key gives you geometry instead. Kangaroo releases two herds onto
+          the interval, and the length of every hop is decided by wherever that kangaroo currently stands.
+              The moment one herd lands on a point the other already visited, both follow the identical path
+              forever, and the gap between where they started is the private key. The work collapses to roughly
+          <b>the square root</b> of the interval.
+        </p>
+        <p>
+          #135 fell exactly this way in July 2026, after the solver known as RetiredCoder spent about five
+          months on 200 GPUs. #140 is the next rung on the same ladder, and it is where trapdoor starts.
+        </p>
+
+        <div class="contrast">
+          <div>
+            <small>#71 &middot; blind</small>
+            <b class="num">5.9 &times; 10<sup>20</sup></b>
+            <p>hashes expected. 2<sup>70</sup> range, no public key, no shortcut of any kind.</p>
+          </div>
+          <div>
+            <small>#140 &middot; computable</small>
+            <b class="num mint">9.6 &times; 10<sup>20</sup></b>
+            <p>hops expected. A range 2<sup>69</sup> times larger, for 1.6&times; the work.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ history ============================ -->
+<section class="band band--inset" id="history">
+  <div class="shell">
+    <div class="band__head">
+      <div>
+        <span class="eyebrow">Track record</span>
+        <h2 data-decode>Eleven years of this puzzle.</h2>
+      </div>
+      <p>Nothing about the puzzle is speculative. It has a transaction history, a body of solvers, and a frontier that keeps moving.</p>
+    </div>
+
+    <ul class="timeline">
+      <li class="reveal">
+        <time>2015-01-15</time>
+        <p>160 addresses funded in a single transaction, each private key placed in a range twice the size of the one before it.</p>
+      </li>
+      <li class="reveal">
+        <time>2017-07-11</time>
+        <p>The creator sweeps addresses #161&ndash;#256 back into the lower ones, raising every remaining prize.</p>
+      </li>
+      <li class="reveal">
+        <time>2019-05-31</time>
+        <p><b>The event this project depends on.</b> 1,000 satoshis are spent out of #65, #70 and every fifth address up to #160. Each spend publishes that address's public key, which turned #140, #145, #150, #155 and #160 into computable targets.</p>
+      </li>
+      <li class="reveal">
+        <time>2023-04-16</time>
+        <p>Every unsolved prize is multiplied by ten. #140 becomes 14 BTC, #160 becomes 16 BTC.</p>
+      </li>
+      <li class="reveal">
+        <time>2024-09-12</time>
+        <p>#66 falls. The winning transaction is broadcast into the public mempool and most of the 6.6 BTC is replaced out from under the solver before it confirms, which is why every later solve was mined privately.</p>
+      </li>
+      <li class="reveal">
+        <time>2025-02 &rarr; 2025-04</time>
+        <p>#67, #68 and #69 fall within ten weeks of each other, all three mined out of band.</p>
+      </li>
+      <li class="reveal" data-key="1">
+        <time>2026-07-28</time>
+        <div>
+          <p><b>#135 falls to RetiredCoder</b>, the highest puzzle ever solved, using Kangaroo on its exposed public key.</p>
+          <blockquote>"Finally I solved #135, it took about 5 months on 200 GPUs. It was&hellip; long. I quit, officially. Happy solving #140 without me."</blockquote>
+        </div>
+      </li>
+      <li class="reveal">
+        <time>Today</time>
+        <p>#140 is the lowest unsolved target with an exposed public key. 77 puzzles remain, holding 903 BTC between them.</p>
+      </li>
+    </ul>
+
+    <p class="tip" style="margin-top:26px">
+      Dates, addresses and balances on this page were taken from
+      <a class="link-arrow" href="https://privatekeys.pw/puzzles/bitcoin-puzzle-tx" target="_blank" rel="noopener">privatekeys.pw &nearr;</a>
+      and can be re-checked against any Bitcoin node.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ wallet ============================ -->
+<section class="band" id="wallet">
+  <div class="shell">
+    <div class="band__head">
+      <div>
+        <span class="eyebrow">Transparency</span>
+        <h2 data-decode>One wallet. Watch it.</h2>
+      </div>
+      <p>The project's wallet was public before this page existed. It is the only accounting statement trapdoor will ever need.</p>
+    </div>
+
+    <div class="wallet">
+      <div class="panel panel--cut wallet__card reveal">
+        <h3>Project wallet</h3>
+        <p class="tip" style="margin:10px 0 18px">Fees arrive here. Compute is paid for from here. Both directions are on-chain.</p>
+
+        <button class="addr" type="button" data-wallet>
+          <code>0x5c1a2e9f47b830d6e1a9c4f082b7d3e91a6c5f80</code>
+          <span class="addr__hint">copy</span>
+        </button>
+
+        <div class="wallet__rows">
+          <div><span>Chain</span><b data-chain>Robinhood Chain</b></div>
+          <div><span>Role</span><b>Collects fees &middot; pays for compute</b></div>
+            <div><span>First target</span><b>Puzzle #140, 14 BTC</b></div>
+            <div hidden data-needs-token><span>Token</span><b></b></div>
+        </div>
+      </div>
+
+      <div class="panel panel--cut panel--pad reveal" data-delay="1">
+        <h3>What this wallet is not</h3>
+        <p style="color:var(--ink-2);margin-top:12px;line-height:1.7">
+              It does not hold a puzzle prize and it never will. A recovered key spends on <b style="color:var(--ink);font-weight:500">Bitcoin</b>,
+              not here, so if #140 is ever solved, the proof appears at
+          <code class="mono blue" style="word-break:break-all">1QKBaU6WAeycb3DbKbLBkX7vJiaS8r42Xo</code>
+          within seconds, on the most public ledger there is. You will not need this website to tell you.
+        </p>
+        <hr class="hr-fade" style="margin:22px 0">
+        <p class="tip">
+          trapdoor is an experiment. It does not promise a solve, a payout, or a schedule. The bounties are a
+          public race that anybody can win at any moment, including people who have never heard of this project.
+        </p>
+        <p class="tip" style="margin-top:14px">
+          Target changes and anything spent out of this wallet get posted on
+          <a class="link-arrow" data-social-x href="#" target="_blank" rel="noopener"><span data-x-handle>@trapdoor</span> &nearr;</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ faq ============================ -->
+<section class="band band--inset" id="faq">
+  <div class="shell">
+    <div class="band__head">
+      <div>
+        <span class="eyebrow">Questions</span>
+        <h2 data-decode>The obvious objections.</h2>
+      </div>
+      <p>Answered directly, including the ones without a comfortable answer.</p>
+    </div>
+
+    <div class="qa">
+      <button class="qa__q" type="button">Isn't taking these coins just theft? <i aria-hidden="true"></i></button>
+      <div class="qa__a"><div>
+        <p>No. The creator built the puzzle as a public measurement of how much cracking power the world has, said
+        so on BitcoinTalk at the time, and has topped the prizes up twice since. The keys are meant to be found, and
+        whoever finds one spends it. It has been an open race with published rules for eleven years.</p>
+      </div></div>
+    </div>
+
+    <div class="qa">
+      <button class="qa__q" type="button">Why start at #140 instead of the cheaper-looking #71? <i aria-hidden="true"></i></button>
+      <div class="qa__a"><div>
+        <p>Because #140 leaked its public key and #71 did not. In work terms they are almost the same target,
+        roughly 10<sup>21</sup> operations each, but #140 pays 14 BTC instead of 7.1, and its work can be
+        split cleanly across rented machines. #71 stays on the board; it is simply worse value for the same
+        electricity.</p>
+      </div></div>
+    </div>
+
+    <div class="qa">
+      <button class="qa__q" type="button">What happens if somebody else solves it first? <i aria-hidden="true"></i></button>
+      <div class="qa__a"><div>
+        <p>The tile turns, the hardware moves to the next target, and the board carries on. There are 77 of them
+        holding 903 BTC, and the five computable ones alone hold 75 BTC. This is the reason the project is not
+        named after a single puzzle.</p>
+      </div></div>
+    </div>
+
+    <div class="qa">
+      <button class="qa__q" type="button">Be honest, what are the odds? <i aria-hidden="true"></i></button>
+      <div class="qa__a"><div>
+        <p>A hundred GPUs pointed at #140 would expect to spend decades. Ten thousand would expect months. That
+        gap is the entire argument for funding this with a fee stream instead of a fixed budget: the only lever
+        that matters is how much compute is running, and fees compound.</p>
+        <p>It is also why nobody should treat a solve as scheduled. Expected work is a median, not a deadline.
+        Every target on the board carries the exact figure, and luck moves a real run in both directions.</p>
+      </div></div>
+    </div>
+
+    <div class="qa">
+      <button class="qa__q" type="button">Why Robinhood Chain? <i aria-hidden="true"></i></button>
+      <div class="qa__a"><div>
+        <p>It is where the experiment lives and where the fees come from. The project wallet is public there, so
+        the flow from trading activity to compute spending can be followed by anyone without a dashboard, an API
+        key, or our permission.</p>
+      </div></div>
+    </div>
+
+    <div class="qa">
+      <button class="qa__q" type="button">Can I contribute hardware? <i aria-hidden="true"></i></button>
+      <div class="qa__a"><div>
+        <p>Not yet, in the sense that there is no pool to point a machine at. What already exists is the reporting
+        side of it: every rig the project runs publishes its own readings to the fleet panel above, so outside
+        hardware can be added the day the work-splitting side is ready without asking anybody to take a number on
+        trust. Changes get announced on
+        <a class="link-arrow" data-social-x href="#" target="_blank" rel="noopener"><span data-x-handle>@trapdoor</span> &nearr;</a>.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="shell">
+    <div class="footer__grid">
+      <div>
+        <a class="brand" href="#top" style="margin-bottom:16px">
+          <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true"><use href="#logo-icon"></use></svg>
+          <span class="brand__word">trapdoor</span>
+        </a>
+        <p class="footer__note">
+          An experiment on <span data-chain>Robinhood Chain</span> that turns trading fees into compute and
+          points that compute at every unsolved Bitcoin puzzle. Public wallet, public targets, public maths.
+        </p>
+      </div>
+
+      <div>
+        <h4>Project</h4>
+        <div class="footer__links">
+          <a href="#setup">The setup</a>
+          <a href="#engine">Fee engine</a>
+          <a href="#fleet" data-nav-fleet>Fleet</a>
+          <a href="#board">The board</a>
+          <a href="#history">Track record</a>
+          <a data-social-x href="#" target="_blank" rel="noopener"><span data-x-handle>@trapdoor</span> on X &nearr;</a>
+        </div>
+      </div>
+
+      <div>
+        <h4>Verify</h4>
+        <div class="footer__links">
+          <a href="https://privatekeys.pw/puzzles/bitcoin-puzzle-tx" target="_blank" rel="noopener">Puzzle directory &nearr;</a>
+          <a href="https://bitcointalk.org/index.php?topic=1306983.0" target="_blank" rel="noopener">Original BitcoinTalk thread &nearr;</a>
+          <a href="https://mempool.space/address/1QKBaU6WAeycb3DbKbLBkX7vJiaS8r42Xo" target="_blank" rel="noopener">#140 on mempool.space &nearr;</a>
+          <a href="https://github.com/RetiredC/RCKangaroo" target="_blank" rel="noopener">RCKangaroo solver &nearr;</a>
+          <a href="https://en.wikipedia.org/wiki/Pollard%27s_kangaroo_algorithm" target="_blank" rel="noopener">Pollard's Kangaroo &nearr;</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer__base">
+      <span>trapdoor &middot; <span data-year>2026</span> &middot; fee-funded &middot; no team allocation &middot; no promises</span>
+      <span>Not financial advice. Puzzle bounties can be claimed by anyone, at any time.</span>
+    </div>
+  </div>
+</footer>
+
+<div class="scrim" data-scrim></div>
+
+<aside class="drawer" data-drawer aria-hidden="true" aria-label="Target detail">
+  <div class="drawer__head">
+    <div>
+      <h3 data-drawer-title>Puzzle</h3>
+      <p data-drawer-sub></p>
+    </div>
+    <button class="drawer__close" type="button" data-drawer-close aria-label="Close">&times;</button>
+  </div>
+  <div class="drawer__body" data-drawer-body></div>
+</aside>
+
+<script>
+/* ============================================================
+   config.js
+   ============================================================ */
+window.DECODED_CONFIG = {
+  name: 'trapdoor',
+  chain: 'Robinhood Chain',
+  devWallet: '0x5c1a2e9f47b830d6e1a9c4f082b7d3e91a6c5f80',
+  tokenAddress: '',
+  explorerAddressBase: '',
+  social: {
+    x: 'https://x.com/Trygatepost',
+    xHandle: '@Trygatepost'
+  },
+  primaryTarget: 140,
+  api: {
+    price: 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+    address: 'https://mempool.space/api/address/',
+    addressPage: 'https://mempool.space/address/'
+  },
+  assumptions: {
+    kangarooK: 1.15
+  },
+  source: {
+    verified: '2026-09-22',
+    url: 'https://privatekeys.pw/puzzles/bitcoin-puzzle-tx',
+    label: 'privatekeys.pw'
+  }
+};
+
+/* ============================================================
+   data/targets.js
+   ============================================================ */
+window.DECODED_TARGETS = [
+  { n: 71, address: '1PWo3JeB9jrGwfHDNpdGK54CRas7fsVzXU' },
+  { n: 72, address: '1JTK7s9YVYywfm5XUH7RNhHJH1LshCaRFR' },
+  { n: 73, address: '12VVRNPi4SJqUTsp6FmqDqY5sGosDtysn4' },
+  { n: 74, address: '1FWGcVDK3JGzCC3WtkYetULPszMaK2Jksv' },
+  { n: 76, address: '1DJh2eHFYQfACPmrvpyWc8MSTYKh7w9eRF' },
+  { n: 77, address: '1Bxk4CQdqL9p22JEtDfdXMsng1XacifUtE' },
+  { n: 78, address: '15qF6X51huDjqTmF9BJgxXdt1xcj46Jmhb' },
+  { n: 79, address: '1ARk8HWJMn8js8tQmGUJeQHjSE7KRkn2t8' },
+  { n: 81, address: '15qsCm78whspNQFydGJQk5rexzxTQopnHZ' },
+  { n: 82, address: '13zYrYhhJxp6Ui1VV7pqa5WDhNWM45ARAC' },
+  { n: 83, address: '14MdEb4eFcT3MVG5sPFG4jGLuHJSnt1Dk2' },
+  { n: 84, address: '1CMq3SvFcVEcpLMuuH8PUcNiqsK1oicG2D' },
+  { n: 86, address: '1K3x5L6G57Y494fDqBfrojD28UJv4s5JcK' },
+  { n: 87, address: '1PxH3K1Shdjb7gSEoTX7UPDZ6SH4qGPrvq' },
+  { n: 88, address: '16AbnZjZZipwHMkYKBSfswGWKDmXHjEpSf' },
+  { n: 89, address: '19QciEHbGVNY4hrhfKXmcBBCrJSBZ6TaVt' },
+  { n: 91, address: '1EzVHtmbN4fs4MiNk3ppEnKKhsmXYJ4s74' },
+  { n: 92, address: '1AE8NzzgKE7Yhz7BWtAcAAxiFMbPo82NB5' },
+  { n: 93, address: '17Q7tuG2JwFFU9rXVj3uZqRtioH3mx2Jad' },
+  { n: 94, address: '1K6xGMUbs6ZTXBnhw1pippqwK6wjBWtNpL' },
+  { n: 96, address: '15ANYzzCp5BFHcCnVFzXqyibpzgPLWaD8b' },
+  { n: 97, address: '18ywPwj39nGjqBrQJSzZVq2izR12MDpDr8' },
+  { n: 98, address: '1CaBVPrwUxbQYYswu32w7Mj4HR4maNoJSX' },
+  { n: 99, address: '1JWnE6p6UN7ZJBN7TtcbNDoRcjFtuDWoNL' },
+  { n: 101, address: '1CKCVdbDJasYmhswB6HKZHEAnNaDpK7W4n' },
+  { n: 102, address: '1PXv28YxmYMaB8zxrKeZBW8dt2HK7RkRPX' },
+  { n: 103, address: '1AcAmB6jmtU6AiEcXkmiNE9TNVPsj9DULf' },
+  { n: 104, address: '1EQJvpsmhazYCcKX5Au6AZmZKRnzarMVZu' },
+  { n: 106, address: '18KsfuHuzQaBTNLASyj15hy4LuqPUo1FNB' },
+  { n: 107, address: '15EJFC5ZTs9nhsdvSUeBXjLAuYq3SWaxTc' },
+  { n: 108, address: '1HB1iKUqeffnVsvQsbpC6dNi1XKbyNuqao' },
+  { n: 109, address: '1GvgAXVCbA8FBjXfWiAms4ytFeJcKsoyhL' },
+  { n: 111, address: '1824ZJQ7nKJ9QFTRBqn7z7dHV5EGpzUpH3' },
+  { n: 112, address: '18A7NA9FTsnJxWgkoFfPAFbQzuQxpRtCos' },
+  { n: 113, address: '1NeGn21dUDDeqFQ63xb2SpgUuXuBLA4WT4' },
+  { n: 114, address: '174SNxfqpdMGYy5YQcfLbSTK3MRNZEePoy' },
+  { n: 116, address: '1MnJ6hdhvK37VLmqcdEwqC3iFxyWH2PHUV' },
+  { n: 117, address: '1KNRfGWw7Q9Rmwsc6NT5zsdvEb9M2Wkj5Z' },
+  { n: 118, address: '1PJZPzvGX19a7twf5HyD2VvNiPdHLzm9F6' },
+  { n: 119, address: '1GuBBhf61rnvRe4K8zu8vdQB3kHzwFqSy7' },
+  { n: 121, address: '1GDSuiThEV64c166LUFC9uDcVdGjqkxKyh' },
+  { n: 122, address: '1Me3ASYt5JCTAK2XaC32RMeH34PdprrfDx' },
+  { n: 123, address: '1CdufMQL892A69KXgv6UNBD17ywWqYpKut' },
+  { n: 124, address: '1BkkGsX9ZM6iwL3zbqs7HWBV7SvosR6m8N' },
+  { n: 126, address: '1AWCLZAjKbV1P7AHvaPNCKiB7ZWVDMxFiz' },
+  { n: 127, address: '1G6EFyBRU86sThN3SSt3GrHu1sA7w7nzi4' },
+  { n: 128, address: '1MZ2L1gFrCtkkn6DnTT2e4PFUTHw9gNwaj' },
+  { n: 129, address: '1Hz3uv3nNZzBVMXLGadCucgjiCs5W9vaGz' },
+  { n: 131, address: '16zRPnT8znwq42q7XeMkZUhb1bKqgRogyy' },
+  { n: 132, address: '1KrU4dHE5WrW8rhWDsTRjR21r8t3dsrS3R' },
+  { n: 133, address: '17uDfp5r4n441xkgLFmhNoSW1KWp6xVLD' },
+  { n: 134, address: '13A3JrvXmvg5w9XGvyyR4JEJqiLz8ZySY3' },
+  { n: 136, address: '1UDHPdovvR985NrWSkdWQDEQ1xuRiTALq' },
+  { n: 137, address: '15nf31J46iLuK1ZkTnqHo7WgN5cARFK3RA' },
+  { n: 138, address: '1Ab4vzG6wEQBDNQM1B2bvUz4fqXXdFk2WT' },
+  { n: 139, address: '1Fz63c775VV9fNyj25d9Xfw3YHE6sKCxbt' },
+  { n: 140, address: '1QKBaU6WAeycb3DbKbLBkX7vJiaS8r42Xo', pubkey: '031f6a332d3c5c4f2de2378c012f429cd109ba07d69690c6c701b6bb87860d6640' },
+  { n: 141, address: '1CD91Vm97mLQvXhrnoMChhJx4TP9MaQkJo' },
+  { n: 142, address: '15MnK2jXPqTMURX4xC3h4mAZxyCcaWWEDD' },
+  { n: 143, address: '13N66gCzWWHEZBxhVxG18P8wyjEWF9Yoi1' },
+  { n: 144, address: '1NevxKDYuDcCh1ZMMi6ftmWwGrZKC6j7Ux' },
+  { n: 145, address: '19GpszRNUej5yYqxXoLnbZWKew3KdVLkXg', pubkey: '03afdda497369e219a2c1c369954a930e4d3740968e5e4352475bcffce3140dae5' },
+  { n: 146, address: '1M7ipcdYHey2Y5RZM34MBbpugghmjaV89P' },
+  { n: 147, address: '18aNhurEAJsw6BAgtANpexk5ob1aGTwSeL' },
+  { n: 148, address: '1FwZXt6EpRT7Fkndzv6K4b4DFoT4trbMrV' },
+  { n: 149, address: '1CXvTzR6qv8wJ7eprzUKeWxyGcHwDYP1i2' },
+  { n: 150, address: '1MUJSJYtGPVGkBCTqGspnxyHahpt5Te8jy', pubkey: '03137807790ea7dc6e97901c2bc87411f45ed74a5629315c4e4b03a0a102250c49' },
+  { n: 151, address: '13Q84TNNvgcL3HJiqQPvyBb9m4hxjS3jkV' },
+  { n: 152, address: '1LuUHyrQr8PKSvbcY1v1PiuGuqFjWpDumN' },
+  { n: 153, address: '18192XpzzdDi2K11QVHR7td2HcPS6Qs5vg' },
+  { n: 154, address: '1NgVmsCCJaKLzGyKLFJfVequnFW9ZvnMLN' },
+  { n: 155, address: '1AoeP37TmHdFh8uN72fu9AqgtLrUwcv2wJ', pubkey: '035cd1854cae45391ca4ec428cc7e6c7d9984424b954209a8eea197b9e364c05f6' },
+  { n: 156, address: '1FTpAbQa4h8trvhQXjXnmNhqdiGBd1oraE' },
+  { n: 157, address: '14JHoRAdmJg3XR4RjMDh6Wed6ft6hzbQe9' },
+  { n: 158, address: '19z6waranEf8CcP8FqNgdwUe1QRxvUNKBG' },
+  { n: 159, address: '14u4nA5sugaswb6SZgn5av2vuChdMnD9E5' },
+  { n: 160, address: '1NBC8uXJy1GiJ6drkiZa1WuKn51ps7EPTv', pubkey: '02e0a8b039282faf6fe0fd769cfbc4b6b4cf8758ba68220eac420e32b91ddfa673' },
+];
+
+/* ============================================================
+   lib/util.js
+   ============================================================ */
+window.D = window.D || {};
+
+(function (D) {
+  'use strict';
+
+  D.$ = function (sel, root) { return (root || document).querySelector(sel); };
+  D.$$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+
+  D.el = function (tag, attrs, html) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === 'class') node.className = attrs[k];
+        else if (k.indexOf('data-') === 0) node.setAttribute(k, attrs[k]);
+        else node[k] = attrs[k];
+      });
+    }
+    if (html != null) node.innerHTML = html;
+    return node;
+  };
+
+  D.reducedMotion = function () {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  };
+
+  D.clamp = function (v, lo, hi) { return Math.min(hi, Math.max(lo, v)); };
+
+  D.debounce = function (fn, ms) {
+    var t;
+    return function () {
+      var args = arguments, self = this;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(self, args); }, ms || 120);
+    };
+  };
+
+  D.fmtBTC = function (btc) {
+    return (Math.round(btc * 1000) / 1000).toLocaleString('en-US', { maximumFractionDigits: 3 });
+  };
+
+  D.fmtUSD = function (usd) {
+    if (!isFinite(usd)) return '';
+    if (usd >= 1e9) return '$' + (usd / 1e9).toFixed(2) + 'B';
+    if (usd >= 1e6) return '$' + (usd / 1e6).toFixed(usd >= 1e7 ? 1 : 2) + 'M';
+    if (usd >= 1e3) return '$' + Math.round(usd / 1e3) + 'K';
+    return '$' + Math.round(usd);
+  };
+
+  D.sci = function (value) {
+    if (!isFinite(value) || value <= 0) return { mantissa: '0', exp: 0 };
+    var exp = Math.floor(Math.log10(value));
+    var mantissa = value / Math.pow(10, exp);
+    if (mantissa >= 9.995) { mantissa = 1; exp += 1; }
+    return { mantissa: mantissa.toFixed(2).replace(/0+$/, '').replace(/\.$/, ''), exp: exp };
+  };
+
+  D.sciHTML = function (value) {
+    var s = D.sci(value);
+    return s.mantissa + ' &times; 10<sup>' + s.exp + '</sup>';
+  };
+
+  D.onVisible = function (node, cb, opts) {
+    if (!('IntersectionObserver' in window)) { cb(true); return function () {}; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { cb(e.isIntersecting, e); });
+    }, opts || { threshold: .15 });
+    io.observe(node);
+    return function () { io.disconnect(); };
+  };
+
+  D.getJSON = function (url) {
+    if (!window.fetch) return Promise.reject(new Error('no fetch'));
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 9000);
+    return fetch(url, { signal: ctl ? ctl.signal : undefined, cache: 'no-store' })
+      .then(function (r) {
+        clearTimeout(timer);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      });
+  };
+
+  D.copy = function (text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy') ? resolve() : reject(); }
+      catch (e) { reject(e); }
+      document.body.removeChild(ta);
+    });
+  };
+
+  D.fitCanvas = function (canvas) {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var rect = canvas.getBoundingClientRect();
+    var w = Math.max(1, Math.round(rect.width));
+    var h = Math.max(1, Math.round(rect.height));
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: w, h: h, ctx: ctx };
+  };
+}(window.D));
+
+/* ============================================================
+   lib/keyspace.js
+   ============================================================ */
+window.D = window.D || {};
+
+(function (D) {
+  'use strict';
+
+  function cfg() {
+    return (window.DECODED_CONFIG && window.DECODED_CONFIG.assumptions) || { kangarooK: 1.15 };
+  }
+
+  var KS = D.keyspace = {};
+
+  KS.bounty = function (n) { return n / 10; };
+
+  KS.isComputable = function (t) { return !!t.pubkey; };
+
+  KS.range = function (n) {
+    var lo = BigInt(1) << BigInt(n - 1);
+    var hi = (BigInt(1) << BigInt(n)) - BigInt(1);
+    return { lo: lo, hi: hi, loHex: lo.toString(16), hiHex: hi.toString(16) };
+  };
+
+  KS.work = function (t) {
+    var n = t.n;
+    if (KS.isComputable(t)) {
+      return {
+        method: 'kangaroo',
+        label: "Pollard's Kangaroo",
+        ops: cfg().kangarooK * Math.pow(2, (n - 1) / 2),
+        unit: 'group operations',
+        note: 'K = ' + cfg().kangarooK + ' x sqrt(2^' + (n - 1) + ')'
+      };
+    }
+    return {
+      method: 'brute',
+      label: 'Brute force',
+      ops: Math.pow(2, n - 2),
+      unit: 'keys hashed',
+      note: 'half of a 2^' + (n - 1) + ' interval'
+    };
+  };
+
+}(window.D));
+
+/* ============================================================
+   modules/decode-text.js
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  var GLYPHS = '0123456789abcdef';
+
+  function scramble(node, done) {
+    var final = node.getAttribute('data-decode-text');
+    var chars = final.split('');
+    var frame = 0;
+
+    var rect = node.getBoundingClientRect();
+    node.style.minHeight = rect.height + 'px';
+    node.style.whiteSpace = 'nowrap';
+    node.style.overflow = 'hidden';
+
+    function release() {
+      node.style.minHeight = '';
+      node.style.whiteSpace = '';
+      node.style.overflow = '';
+      if (done) done();
+    }
+    var settled = chars.map(function (c) {
+      return c === ' ' ? 0 : 6 + Math.floor(Math.random() * 22);
+    });
+
+    function tick() {
+      var out = '';
+      var complete = true;
+      for (var i = 0; i < chars.length; i++) {
+        if (chars[i] === ' ') { out += ' '; continue; }
+        if (frame >= settled[i]) {
+          out += chars[i];
+        } else {
+          complete = false;
+          out += GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+        }
+      }
+      node.textContent = out;
+      frame++;
+      if (complete) { node.textContent = final; release(); return; }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  D.initDecodeText = function () {
+    D.$$('[data-decode]').forEach(function (node) {
+      var text = node.textContent.trim();
+      node.setAttribute('data-decode-text', text);
+      node.classList.add('scramble');
+      if (D.reducedMotion()) return;
+
+      var fired = false;
+      var stop = D.onVisible(node, function (visible) {
+        if (!visible || fired) return;
+        fired = true;
+        stop();
+        setTimeout(function () { scramble(node); }, parseInt(node.getAttribute('data-decode-delay') || '0', 10));
+      }, { threshold: .4 });
+    });
+  };
+}(window.D));
+
+/* ============================================================
+   modules/reveal.js
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  function countUp(node) {
+    var target = parseFloat(node.getAttribute('data-count'));
+    var decimals = parseInt(node.getAttribute('data-count-decimals') || '0', 10);
+    var dur = 1100;
+    var start = performance.now();
+
+    function frame(now) {
+      var p = D.clamp((now - start) / dur, 0, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      node.textContent = (target * eased).toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  D.initReveal = function () {
+    var reduced = D.reducedMotion();
+
+    D.$$('.reveal').forEach(function (node) {
+      if (reduced) { node.classList.add('is-in'); return; }
+      var stop = D.onVisible(node, function (visible) {
+        if (!visible) return;
+        node.classList.add('is-in');
+        stop();
+      }, { threshold: .12, rootMargin: '0px 0px -8% 0px' });
+    });
+
+    D.$$('[data-count]').forEach(function (node) {
+      if (reduced) {
+        node.textContent = parseFloat(node.getAttribute('data-count')).toLocaleString('en-US');
+        return;
+      }
+      var stop = D.onVisible(node, function (visible) {
+        if (!visible) return;
+        stop();
+        countUp(node);
+      }, { threshold: .6 });
+    });
+  };
+}(window.D));
+
+/* ============================================================
+   modules/market.js
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  D.btcPrice = null;
+
+  D.paintUSD = function () {
+    D.$$('.usd-slot').forEach(function (slot) {
+      var btc = parseFloat(slot.getAttribute('data-btc'));
+      if (!D.btcPrice || !isFinite(btc)) { slot.textContent = ''; return; }
+      slot.textContent = '≈ ' + D.fmtUSD(btc * D.btcPrice);
+    });
+  };
+
+  D.initMarket = function () {
+    D.getJSON(window.DECODED_CONFIG.api.price).then(function (data) {
+      var usd = data && data.bitcoin && data.bitcoin.usd;
+      if (!usd) return;
+      D.btcPrice = usd;
+      D.$$('[data-btc-price]').forEach(function (node) {
+        node.textContent = '$' + Math.round(usd).toLocaleString('en-US');
+      });
+      D.$$('[data-price-live]').forEach(function (node) { node.hidden = false; });
+      D.paintUSD();
+    }).catch(function () { /* stay silent, stay honest */ });
+  };
+}(window.D));
+
+/* ============================================================
+   modules/ui.js
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  D.bindCopy = function (root) {
+    D.$$('[data-copy]', root || document).forEach(function (btn) {
+      if (btn.dataset.copyBound) return;
+      btn.dataset.copyBound = '1';
+      var hint = D.$('.addr__hint', btn);
+      btn.addEventListener('click', function () {
+        D.copy(btn.getAttribute('data-copy')).then(function () {
+          btn.classList.add('is-copied');
+          if (hint) hint.textContent = 'copied';
+          setTimeout(function () {
+            btn.classList.remove('is-copied');
+            if (hint) hint.textContent = 'copy';
+          }, 1600);
+        }).catch(function () {
+          if (hint) hint.textContent = 'select it';
+        });
+      });
+    });
+  };
+
+  function header() {
+    var bar = D.$('.masthead');
+    var toggle = D.$('.nav-toggle');
+    var nav = D.$('.nav');
+    if (!bar) return;
+
+    var onScroll = function () { bar.classList.toggle('is-stuck', window.scrollY > 8); };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    if (toggle && nav) {
+      toggle.addEventListener('click', function () {
+        var open = nav.classList.toggle('is-open');
+        toggle.classList.toggle('is-open', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      D.$$('a', nav).forEach(function (a) {
+        a.addEventListener('click', function () {
+          nav.classList.remove('is-open');
+          toggle.classList.remove('is-open');
+          toggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+  }
+
+  function activeSection() {
+    var links = D.$$('.nav a[href^="#"]');
+    if (!links.length || !('IntersectionObserver' in window)) return;
+    var map = {};
+    links.forEach(function (a) {
+      var id = a.getAttribute('href').slice(1);
+      var section = document.getElementById(id);
+      if (section) map[id] = { link: a, section: section };
+    });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        links.forEach(function (a) { a.classList.remove('is-active'); });
+        var hit = map[e.target.id];
+        if (hit) hit.link.classList.add('is-active');
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    Object.keys(map).forEach(function (id) { io.observe(map[id].section); });
+  }
+
+  function accordions() {
+    D.$$('.qa').forEach(function (qa, i) {
+      var btn = D.$('.qa__q', qa);
+      var panel = D.$('.qa__a > div', qa);
+      var id = 'qa-' + i;
+      panel.id = id;
+      btn.setAttribute('aria-controls', id);
+      btn.setAttribute('aria-expanded', 'false');
+      btn.addEventListener('click', function () {
+        var open = qa.classList.toggle('is-open');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
+  }
+
+  function injectConfig() {
+    var cfg = window.DECODED_CONFIG;
+
+    D.$$('[data-wallet]').forEach(function (node) {
+      node.setAttribute('data-copy', cfg.devWallet);
+      var code = D.$('code', node);
+      if (code) code.textContent = cfg.devWallet;
+      else node.textContent = cfg.devWallet;
+    });
+
+    D.$$('[data-chain]').forEach(function (n) { n.textContent = cfg.chain; });
+    D.$$('[data-year]').forEach(function (n) { n.textContent = new Date().getFullYear(); });
+    D.$$('[data-verified]').forEach(function (n) { n.textContent = cfg.source.verified; });
+
+    D.$$('[data-social-x]').forEach(function (n) {
+      if (cfg.social.x) n.href = cfg.social.x;
+      else n.style.display = 'none';
+    });
+
+    D.$$('[data-x-handle]').forEach(function (n) { n.textContent = cfg.social.xHandle; });
+
+    D.$$('[data-needs-token]').forEach(function (n) {
+      if (cfg.tokenAddress) {
+        n.style.display = '';
+        D.$('b', n).textContent = cfg.tokenAddress;
+      } else {
+        n.style.display = 'none';
+      }
+    });
+  }
+
+  D.initUI = function () {
+    header();
+    activeSection();
+    accordions();
+    injectConfig();
+    D.bindCopy(document);
+  };
+}(window.D));
+
+/* ============================================================
+   modules/hero-field.js
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  var GLYPHS = '0123456789abcdef';
+
+  D.initHeroField = function (canvas) {
+    if (!canvas) return;
+
+    var box = D.fitCanvas(canvas);
+    var ctx = box.ctx;
+    var CELL = 15;
+    var cols, rows, cells, head, locked;
+
+    function build() {
+      box = D.fitCanvas(canvas);
+      ctx = box.ctx;
+      cols = Math.ceil(box.w / CELL) + 1;
+      rows = Math.ceil(box.h / CELL) + 1;
+      cells = new Array(cols * rows);
+      for (var i = 0; i < cells.length; i++) {
+        cells[i] = {
+          c: GLYPHS[(Math.random() * 16) | 0],
+          a: .04 + Math.random() * .12
+        };
+      }
+      head = -120;
+      locked = [];
+    }
+
+    function paint() {
+      ctx.clearRect(0, 0, box.w, box.h);
+      ctx.font = '500 10px ' + 'JetBrains Mono, monospace';
+      ctx.textBaseline = 'top';
+
+      for (var x = 0; x < cols; x++) {
+        var px = x * CELL;
+        var dist = Math.abs(px - head);
+        var near = dist < 90 ? 1 - dist / 90 : 0;
+        for (var y = 0; y < rows; y++) {
+          var cell = cells[y * cols + x];
+          var alpha = cell.a + near * .55;
+          if (alpha <= .03) continue;
+          ctx.fillStyle = near > .45
+            ? 'rgba(255, 143, 199, ' + alpha.toFixed(3) + ')'
+            : 'rgba(190, 150, 170, ' + alpha.toFixed(3) + ')';
+          ctx.fillText(cell.c, px, y * CELL);
+        }
+      }
+
+      for (var l = locked.length - 1; l >= 0; l--) {
+        var L = locked[l];
+        L.life -= 1;
+        if (L.life <= 0) { locked.splice(l, 1); continue; }
+        var g = ctx.createLinearGradient(L.x, 0, L.x, box.h);
+        g.addColorStop(0, 'rgba(255, 46, 145, 0)');
+        g.addColorStop(.5, 'rgba(255, 46, 145, ' + (L.life / 40 * .16).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(255, 46, 145, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(L.x, 0, CELL, box.h);
+      }
+    }
+
+    function step() {
+      head += 13;
+      if (head > box.w + 140) head = -140;
+
+      var col = Math.round(head / CELL);
+      for (var dx = -5; dx <= 1; dx++) {
+        var x = col + dx;
+        if (x < 0 || x >= cols) continue;
+        for (var y = 0; y < rows; y++) {
+          if (Math.random() < .3) cells[y * cols + x].c = GLYPHS[(Math.random() * 16) | 0];
+        }
+      }
+      if (Math.random() < .14) locked.push({ x: Math.round(head / CELL) * CELL, life: 40 });
+      paint();
+    }
+
+    build();
+    paint();
+
+    if (D.reducedMotion()) return;
+
+    var timer = null;
+    function run(on) {
+      if (on && !timer) timer = setInterval(step, 62);
+      if (!on && timer) { clearInterval(timer); timer = null; }
+    }
+
+    D.onVisible(canvas, function (visible) { run(visible && !document.hidden); }, { threshold: 0 });
+    document.addEventListener('visibilitychange', function () {
+      run(!document.hidden && canvas.getBoundingClientRect().bottom > 0);
+    });
+    window.addEventListener('resize', D.debounce(function () { build(); paint(); }, 200));
+  };
+}(window.D));
+
+/* ============================================================
+   modules/kangaroo.js
+   (bug fix: clamp interpolation factor p to <=1 so the collision
+   frame can't extrapolate a herd marker past its landing cell)
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  var N = 900;
+  var JUMPS = [7, 11, 6, 14, 9, 19, 8, 12, 16, 10, 13, 18];
+  var DP_MASK = 18;
+  var HOP_MS = 130;
+
+  D.initKangaroo = function (canvas, statusNode, jumpNode) {
+    if (!canvas) return;
+
+    var box = D.fitCanvas(canvas);
+    var ctx = box.ctx;
+    var herds, jumps, phase, phaseAt, collisionCell, confetti = [];
+
+    function jumpFor(cell) { return JUMPS[cell % JUMPS.length]; }
+
+    function makeHerd(start, color, above, name) {
+      return {
+        name: name,
+        cell: start,
+        from: start,
+        to: start + jumpFor(start),
+        t: 1,
+        color: color,
+        above: above,
+        trail: [start],
+        dps: {}
+      };
+    }
+
+    function reset() {
+      var a = 40 + Math.floor(Math.random() * 70);
+      var b = 40 + Math.floor(Math.random() * 70);
+      herds = [
+        makeHerd(a, '#ff8fc7', true, 'tame'),
+        makeHerd(b, '#5dffb0', false, 'wild')
+      ];
+      jumps = 0;
+      phase = 'run';
+      phaseAt = performance.now();
+      collisionCell = null;
+      confetti = [];
+      report();
+    }
+
+    function spawnConfetti(cx, cy) {
+      var colors = ['#ff2e91', '#ff8fc7', '#5dffb0', '#f7931a'];
+      for (var i = 0; i < 26; i++) {
+        var ang = Math.random() * Math.PI * 2;
+        var spd = 1.3 + Math.random() * 2.8;
+        confetti.push({
+          x: cx, y: cy,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 1.4,
+          size: 2.5 + Math.random() * 2.5,
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - .5) * .3,
+          color: colors[i % colors.length],
+          life: 1
+        });
+      }
+    }
+
+    function report() {
+      if (statusNode) {
+        statusNode.textContent = phase === 'hit' ? 'collision found' : 'herds walking';
+        statusNode.className = phase === 'hit' ? 'mint' : 'blue';
+      }
+      if (jumpNode) jumpNode.textContent = jumps.toLocaleString('en-US');
+    }
+
+    function advance(herd) {
+      herd.cell = herd.to;
+      herd.trail.push(herd.cell);
+      if (herd.trail.length > 260) herd.trail.shift();
+      jumps++;
+
+      var isDP = herd.cell % DP_MASK === 0;
+      if (isDP) {
+        herd.dps[herd.cell] = true;
+        var other = herds[0] === herd ? herds[1] : herds[0];
+        if (other.dps[herd.cell]) {
+          collisionCell = herd.cell;
+          phase = 'hit';
+          phaseAt = performance.now();
+          spawnConfetti(x(herd.cell), Math.round(box.h * .56));
+          report();
+          return;
+        }
+      }
+      herd.from = herd.cell;
+      herd.to = herd.cell + jumpFor(herd.cell);
+      herd.t = 0;
+    }
+
+    function x(cell) {
+      var pad = 26;
+      return pad + (cell / N) * (box.w - pad * 2);
+    }
+
+    function paint(now) {
+      var w = box.w, h = box.h;
+      var base = Math.round(h * .56);
+      ctx.clearRect(0, 0, w, h);
+
+      var rail = ctx.createLinearGradient(0, 0, w, 0);
+      rail.addColorStop(0, 'rgba(36, 49, 74, .25)');
+      rail.addColorStop(.5, 'rgba(36, 49, 74, 1)');
+      rail.addColorStop(1, 'rgba(36, 49, 74, .25)');
+      ctx.fillStyle = rail;
+      ctx.fillRect(0, base, w, 1);
+
+      ctx.font = '500 9px JetBrains Mono, monospace';
+      ctx.fillStyle = 'rgba(107, 125, 148, .9)';
+      ctx.textAlign = 'left';
+      ctx.fillText('2^139', 4, base + 16);
+      ctx.textAlign = 'right';
+      ctx.fillText('2^140 - 1', w - 4, base + 16);
+      ctx.textAlign = 'left';
+
+      ctx.fillStyle = 'rgba(36, 49, 74, .7)';
+      for (var i = 0; i <= 20; i++) {
+        var tx = x(N / 20 * i);
+        ctx.fillRect(tx, base - 3, 1, 3);
+      }
+
+      herds.forEach(function (herd) {
+        var dir = herd.above ? -1 : 1;
+
+        herd.trail.forEach(function (cell, idx) {
+          var age = (herd.trail.length - idx) / herd.trail.length;
+          var alpha = Math.max(0, .5 - age * .45);
+          var isDP = cell % DP_MASK === 0;
+          ctx.globalAlpha = alpha + (isDP ? .35 : 0);
+          ctx.fillStyle = herd.color;
+          if (isDP) {
+            ctx.fillRect(x(cell) - 2.5, base + dir * 9 - 2.5, 5, 5);
+          } else {
+            ctx.beginPath();
+            ctx.arc(x(cell), base + dir * 9, 1.6, 0, 6.283);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        });
+
+        var p = Math.min(herd.t, 1);
+        var cx = x(herd.from) + (x(herd.to) - x(herd.from)) * p;
+        var arc = Math.sin(Math.PI * p);
+        var cy = base + dir * (9 + arc * Math.min(42, h * .16));
+
+        ctx.strokeStyle = herd.color;
+        ctx.globalAlpha = .35;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (var s = 0; s <= 16; s++) {
+          var sp = s / 16 * p;
+          var sx = x(herd.from) + (x(herd.to) - x(herd.from)) * sp;
+          var sy = base + dir * (9 + Math.sin(Math.PI * sp) * Math.min(42, h * .16));
+          if (s === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        ctx.shadowColor = herd.color;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = herd.color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4.2, 0, 6.283);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.font = '500 9px JetBrains Mono, monospace';
+        ctx.fillStyle = herd.color;
+        ctx.globalAlpha = .85;
+        ctx.textAlign = 'center';
+        ctx.fillText(herd.name.toUpperCase(), cx, cy + dir * 14 + (herd.above ? 0 : 4));
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'left';
+      });
+
+      if (phase === 'hit') {
+        var hx = x(collisionCell);
+        var fade = D.clamp(1 - (now - phaseAt) / 1900, 0, 1);
+        var beam = ctx.createLinearGradient(hx, 0, hx, h);
+        beam.addColorStop(0, 'rgba(93, 255, 176, 0)');
+        beam.addColorStop(.5, 'rgba(93, 255, 176, ' + (.55 * fade).toFixed(3) + ')');
+        beam.addColorStop(1, 'rgba(93, 255, 176, 0)');
+        ctx.fillStyle = beam;
+        ctx.fillRect(hx - 1.5, 0, 3, h);
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(93, 255, 176, ' + (.8 * fade).toFixed(3) + ')';
+        ctx.lineWidth = 1.5;
+        ctx.arc(hx, base, 10 + (1 - fade) * 34, 0, 6.283);
+        ctx.stroke();
+
+        ctx.font = '700 11px JetBrains Mono, monospace';
+        ctx.fillStyle = 'rgba(210, 255, 235, ' + fade.toFixed(3) + ')';
+        ctx.textAlign = 'center';
+        ctx.fillText('COLLISION - KEY RECOVERED', hx, Math.max(14, base - h * .3));
+        ctx.textAlign = 'left';
+      }
+
+      if (confetti.length) {
+        confetti.forEach(function (p) {
+          p.vy += .09;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += p.vr;
+          p.life -= .012;
+        });
+        confetti = confetti.filter(function (p) { return p.life > 0 && p.y < h + 20; });
+        confetti.forEach(function (p) {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        });
+      }
+    }
+
+    var last = performance.now();
+    var raf = null;
+
+    function frame(now) {
+      var dt = Math.min(64, now - last);
+      last = now;
+
+      if (phase === 'run') {
+        herds.forEach(function (herd) {
+          herd.t += dt / HOP_MS;
+          while (herd.t >= 1 && phase === 'run') {
+            herd.t -= 1;
+            advance(herd);
+          }
+        });
+        if (phase === 'run') {
+          var far = herds.some(function (h) { return h.cell > N * .94; });
+          if (far) reset();
+        }
+        report();
+      } else if (now - phaseAt > 2400) {
+        reset();
+      }
+
+      paint(now);
+      raf = requestAnimationFrame(frame);
+    }
+
+    function stopLoop() {
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+    }
+
+    reset();
+    paint(performance.now());
+
+    if (D.reducedMotion()) return;
+
+    D.onVisible(canvas, function (visible) {
+      if (visible && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+      if (!visible) stopLoop();
+    }, { threshold: .2 });
+
+    window.addEventListener('resize', D.debounce(function () {
+      box = D.fitCanvas(canvas);
+      ctx = box.ctx;
+      paint(performance.now());
+    }, 200));
+  };
+}(window.D));
+
+/* ============================================================
+   modules/board.js
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  var KS = D.keyspace;
+  var state = { filter: 'all', sort: 'n', active: null };
+  var cache = {};
+  var nodes = {};
+  var targets = [];
+
+  var FILTERS = [
+    { id: 'all', label: 'All targets', test: function () { return true; } },
+    { id: 'computable', label: 'Key computable', test: function (t) { return !!t.pubkey; } },
+    { id: 'blind', label: 'Blind keyspace', test: function (t) { return !t.pubkey; } },
+    { id: 'low', label: '71–99 bits', test: function (t) { return t.n < 100; } },
+    { id: 'mid', label: '100–129 bits', test: function (t) { return t.n >= 100 && t.n < 130; } },
+    { id: 'high', label: '130–160 bits', test: function (t) { return t.n >= 130; } }
+  ];
+
+  function filterOf(id) {
+    for (var i = 0; i < FILTERS.length; i++) if (FILTERS[i].id === id) return FILTERS[i];
+    return FILTERS[0];
+  }
+
+  function visible() {
+    var f = filterOf(state.filter);
+    var list = targets.filter(f.test);
+    if (state.sort === 'work') {
+      list.sort(function (a, b) { return KS.work(a).ops - KS.work(b).ops; });
+    } else if (state.sort === 'bounty') {
+      list.sort(function (a, b) { return b.n - a.n; });
+    } else {
+      list.sort(function (a, b) { return a.n - b.n; });
+    }
+    return list;
+  }
+
+  function tile(t) {
+    var computable = !!t.pubkey;
+    var node = D.el('button', {
+      class: 'tile' + (computable ? ' tile--computable' : ''),
+      type: 'button',
+      'data-n': String(t.n)
+    });
+    node.setAttribute('aria-label', 'Puzzle ' + t.n + ', ' + KS.bounty(t.n) + ' BTC');
+    node.innerHTML =
+      (computable ? '<i class="tile__flag" aria-hidden="true"></i>' : '') +
+      '<span class="tile__n">' + t.n + '<small> bit</small></span>' +
+      '<span class="tile__btc num">' + KS.bounty(t.n).toFixed(1) + ' BTC</span>' +
+      '<span class="tile__bits">' + (computable ? 'PUBKEY OPEN' : 'HASH ONLY') + '</span>';
+    node.addEventListener('click', function () { open(t.n); });
+    return node;
+  }
+
+  function render() {
+    var list = visible();
+    nodes.grid.innerHTML = '';
+    var frag = document.createDocumentFragment();
+    list.forEach(function (t) { frag.appendChild(tile(t)); });
+    nodes.grid.appendChild(frag);
+
+    var btc = list.reduce(function (sum, t) { return sum + KS.bounty(t.n); }, 0);
+    nodes.meta.innerHTML = list.length + ' shown · ' + D.fmtBTC(btc) + ' BTC on the table'
+      + '<span class="usd-slot" data-btc="' + btc + '"></span>';
+    if (D.paintUSD) D.paintUSD();
+    markActive();
+  }
+
+  function markActive() {
+    D.$$('.tile', nodes.grid).forEach(function (el) {
+      el.classList.toggle('is-active', state.active != null && el.getAttribute('data-n') === String(state.active));
+    });
+  }
+
+  function verifyRow(t) {
+    var wrap = D.el('div', { class: 'verify' });
+    wrap.innerHTML = '<span class="muted">Checking a public node…</span>';
+
+    var url = window.DECODED_CONFIG.api.address + t.address;
+    var cached = cache[t.address];
+
+    function paint(data) {
+      var funded = data.chain_stats.funded_txo_sum;
+      var spent = data.chain_stats.spent_txo_sum;
+      var balance = (funded - spent) / 1e8;
+      var stillThere = balance >= KS.bounty(t.n) * .9;
+      wrap.innerHTML = stillThere
+        ? '<span class="dot dot--mint" aria-hidden="true"></span><span><b class="mint">' + balance.toFixed(6) + ' BTC</b> still sitting there, unspent. Nobody has this key.</span>'
+        : '<span><b class="blue">' + balance.toFixed(6) + ' BTC</b> left. This address has moved, so the board is stale and this one should be treated as solved.</span>';
+    }
+
+    if (cached) { paint(cached); return wrap; }
+
+    D.getJSON(url).then(function (data) {
+      cache[t.address] = data;
+      paint(data);
+    }).catch(function () {
+      wrap.innerHTML = '<span class="muted">Live check unavailable right now. Open the address on mempool.space instead.</span>';
+    });
+
+    return wrap;
+  }
+
+  function open(n) {
+    var t = null;
+    for (var i = 0; i < targets.length; i++) if (targets[i].n === n) t = targets[i];
+    if (!t) return;
+
+    state.active = n;
+    var computable = !!t.pubkey;
+    var r = KS.range(n);
+    var work = KS.work(t);
+    var cfg = window.DECODED_CONFIG;
+
+    nodes.drawerTitle.innerHTML = 'Puzzle #' + n;
+    nodes.drawerSub.textContent = n + '-bit range · ' + (computable ? 'public key exposed' : 'public key hidden');
+
+    var html = '';
+    html += '<div class="drawer__bounty"><b class="num">' + KS.bounty(n).toFixed(1) + ' BTC</b>'
+      + '<span class="usd-slot" data-btc="' + KS.bounty(n) + '"></span></div>';
+
+    html += '<section><h4>Status</h4><div id="verify-slot"></div></section>';
+
+    html += '<section><h4>Attack</h4><div class="kv">'
+      + '<dt>Method</dt><dd>' + work.label + (computable ? '' : ' (no shortcut exists)') + '</dd>'
+      + '<dt>Expected</dt><dd>' + D.sciHTML(work.ops) + ' ' + work.unit + '<br><span class="muted">' + work.note + '</span></dd>'
+      + '<dt>Interval</dt><dd>2<sup>' + (n - 1) + '</sup> keys wide</dd>'
+      + '</div></section>';
+
+    html += '<section><h4>Bitcoin address</h4>'
+      + '<button class="addr" type="button" data-copy="' + t.address + '"><code>' + t.address + '</code><span class="addr__hint">copy</span></button>'
+      + '</section>';
+
+    if (computable) {
+      html += '<section><h4>Leaked public key</h4>'
+        + '<button class="addr" type="button" data-copy="' + t.pubkey + '"><code>' + t.pubkey + '</code><span class="addr__hint">copy</span></button>'
+        + '<p class="tip">This is the whole reason #' + n + ' is on the short list. Spending once exposed it in 2019.</p>'
+        + '</section>';
+    }
+
+    html += '<section><h4>Key range (hex)</h4><div class="kv">'
+      + '<dt>From</dt><dd>' + r.loHex + '</dd>'
+      + '<dt>To</dt><dd>' + r.hiHex + '</dd>'
+      + '</div></section>';
+
+    html += '<section><h4>Verify elsewhere</h4><div class="chips">'
+      + '<a class="chip" href="' + cfg.api.addressPage + t.address + '" target="_blank" rel="noopener">mempool.space ↗</a>'
+      + '<a class="chip" href="' + cfg.source.url + '" target="_blank" rel="noopener">' + cfg.source.label + ' ↗</a>'
+      + '</div></section>';
+
+    nodes.drawerBody.innerHTML = html;
+    D.$('#verify-slot', nodes.drawerBody).appendChild(verifyRow(t));
+    D.bindCopy(nodes.drawerBody);
+    if (D.paintUSD) D.paintUSD();
+
+    nodes.drawer.classList.add('is-open');
+    nodes.scrim.classList.add('is-on');
+    nodes.drawer.setAttribute('aria-hidden', 'false');
+    nodes.drawerClose.focus();
+    markActive();
+  }
+
+  function close() {
+    state.active = null;
+    nodes.drawer.classList.remove('is-open');
+    nodes.scrim.classList.remove('is-on');
+    nodes.drawer.setAttribute('aria-hidden', 'true');
+    markActive();
+  }
+
+  D.initBoard = function () {
+    targets = (window.DECODED_TARGETS || []).slice();
+    nodes.grid = D.$('[data-board-grid]');
+    if (!nodes.grid) return;
+
+    nodes.meta = D.$('[data-board-meta]');
+    nodes.chips = D.$('[data-board-filters]');
+    nodes.sort = D.$('[data-board-sort]');
+    nodes.drawer = D.$('[data-drawer]');
+    nodes.drawerBody = D.$('[data-drawer-body]');
+    nodes.drawerTitle = D.$('[data-drawer-title]');
+    nodes.drawerSub = D.$('[data-drawer-sub]');
+    nodes.drawerClose = D.$('[data-drawer-close]');
+    nodes.scrim = D.$('[data-scrim]');
+
+    FILTERS.forEach(function (f) {
+      var count = targets.filter(f.test).length;
+      var chip = D.el('button', {
+        class: 'chip' + (f.id === state.filter ? ' is-on' : ''),
+        type: 'button',
+        'data-filter': f.id
+      }, f.label + '<b>' + count + '</b>');
+      chip.addEventListener('click', function () {
+        state.filter = f.id;
+        D.$$('.chip', nodes.chips).forEach(function (c) { c.classList.toggle('is-on', c === chip); });
+        render();
+      });
+      nodes.chips.appendChild(chip);
+    });
+
+    nodes.sort.addEventListener('change', function () {
+      state.sort = nodes.sort.value;
+      render();
+    });
+
+    nodes.drawerClose.addEventListener('click', close);
+    nodes.scrim.addEventListener('click', close);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && nodes.drawer.classList.contains('is-open')) close();
+    });
+
+    D.$$('[data-open-target]').forEach(function (btn) {
+      btn.addEventListener('click', function () { open(parseInt(btn.getAttribute('data-open-target'), 10)); });
+    });
+
+    render();
+  };
+}(window.D));
+
+/* ============================================================
+   modules/fleet.js
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  var els = {};
+  var state = { snaps: {}, history: [], open: {}, onscreen: false, timer: 0 };
+
+  function cfg() { return (window.DECODED_CONFIG && window.DECODED_CONFIG.fleet) || {}; }
+
+  function ids() {
+    return Object.keys(state.snaps).sort(function (a, b) {
+      var as = state.snaps[a] || {};
+      var bs = state.snaps[b] || {};
+      if (!!as._stale !== !!bs._stale) return as._stale ? 1 : -1;
+      return (bs.throughput_keys || 0) - (as.throughput_keys || 0);
+    });
+  }
+
+  var SI = [[1e18, 'E'], [1e15, 'P'], [1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'K']];
+
+  function si(v) {
+    if (!isFinite(v) || v <= 0) return { n: '0', u: '' };
+    for (var i = 0; i < SI.length; i++) {
+      if (v >= SI[i][0]) {
+        var x = v / SI[i][0];
+        return { n: x.toFixed(x >= 100 ? 0 : x >= 10 ? 1 : 2), u: SI[i][1] };
+      }
+    }
+    return { n: String(Math.round(v)), u: '' };
+  }
+
+  function int(v) { return Math.round(v || 0).toLocaleString('en-US'); }
+
+  function shortDur(sec) {
+    if (!isFinite(sec) || sec < 0) return 'n/a';
+    var d = Math.floor(sec / 86400);
+    var h = Math.floor((sec % 86400) / 3600);
+    var m = Math.floor((sec % 3600) / 60);
+    if (d) return d + 'd ' + h + 'h';
+    if (h) return h + 'h ' + m + 'm';
+    if (m) return m + 'm';
+    return Math.floor(sec) + 's';
+  }
+
+  function tempClass(c) { return c >= 84 ? ' meter--hot' : c >= 72 ? ' meter--warm' : ' meter--mint'; }
+
+  function aggregate() {
+    var now = Date.now();
+    var stale = cfg().staleAfterMs || 120000;
+    var a = { live: [], all: [], gpus: 0, rate: 0, watts: 0, newest: 0 };
+
+    Object.keys(state.snaps).forEach(function (id) {
+      var s = state.snaps[id];
+      if (!s) return;
+      a.all.push(s);
+      var age = Math.max(0, now - (s.ts || 0) * 1000);
+      s._age = age;
+      s._stale = age > stale;
+      if (!s._stale) a.live.push(s);
+      if ((s.ts || 0) > a.newest) a.newest = s.ts;
+    });
+
+    a.live.forEach(function (s) {
+      a.rate += s.throughput_keys || 0;
+      (s.gpus || []).forEach(function (g) {
+        a.gpus += 1;
+        a.watts += g.power_w || 0;
+      });
+    });
+
+    return a;
+  }
+
+  function fetchAll() {
+    var url = cfg().url || 'data/fleet.json';
+    return D.getJSON(url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now())
+      .then(function (data) {
+        state.snaps = {};
+        (data.nodes || []).forEach(function (s) {
+          if (s && s.node && s.ts) state.snaps[s.node] = s;
+        });
+        state.history = (data.history || []).map(function (p) {
+          return { t: (p[0] || 0) * 1000, rate: p[1] || 0 };
+        });
+      })
+      .catch(function () {});
+  }
+
+  function drawSpark() {
+    if (!els.spark) return;
+    var box = D.fitCanvas(els.spark);
+    var ctx = box.ctx;
+    var w = box.w;
+    var h = box.h;
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.strokeStyle = 'rgba(51,16,31,.9)';
+    ctx.lineWidth = 1;
+    for (var g = 1; g < 4; g++) {
+      var gy = Math.round(h * g / 4) + .5;
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(w, gy);
+      ctx.stroke();
+    }
+
+    var pts = state.history;
+    if (els.chartLabel) {
+      var span = pts.length > 1 ? (pts[pts.length - 1].t - pts[0].t) / 1000 : 0;
+      els.chartLabel.textContent = span > 60
+        ? 'Fleet throughput, last ' + shortDur(span)
+        : 'Fleet throughput';
+    }
+
+    if (pts.length < 2) {
+      ctx.fillStyle = 'rgba(107,125,148,.75)';
+      ctx.font = '11px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('waiting for the first two samples', w / 2, h / 2);
+      return;
+    }
+
+    var peak = 0;
+    pts.forEach(function (p) { if (p.rate > peak) peak = p.rate; });
+    if (peak <= 0) peak = 1;
+    var top = peak * 1.15;
+
+    function x(i) { return (i / (pts.length - 1)) * w; }
+    function y(v) { return h - (v / top) * h; }
+
+    var grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(255,46,145,.3)');
+    grad.addColorStop(1, 'rgba(255,46,145,0)');
+
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    pts.forEach(function (p, i) { ctx.lineTo(x(i), y(p.rate)); });
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    pts.forEach(function (p, i) { i ? ctx.lineTo(x(i), y(p.rate)) : ctx.moveTo(x(i), y(p.rate)); });
+    ctx.strokeStyle = '#ff8fc7';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    var lastPt = pts[pts.length - 1];
+    ctx.beginPath();
+    ctx.arc(w - 2, y(lastPt.rate), 2.6, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff8fc7';
+    ctx.fill();
+  }
+
+  function rigNo(id) {
+    var s = state.snaps[id];
+    if (s && s.n) return s.n;
+    var keys = Object.keys(state.snaps).sort();
+    return keys.indexOf(id) + 1;
+  }
+
+  function gpuSummary(list) {
+    if (!list.length) return { model: '', util: 0, temp: 0, watts: 0 };
+    var util = 0, temp = 0, watts = 0;
+    list.forEach(function (g) {
+      util += g.util || 0;
+      if ((g.temp || 0) > temp) temp = g.temp;
+      watts += g.power_w || 0;
+    });
+    return {
+      model: list[0].name || '',
+      util: Math.round(util / list.length),
+      temp: temp,
+      watts: watts
+    };
+  }
+
+  function gpuDetail(s) {
+    var wrap = D.el('div', { class: 'rig-gpus' });
+    (s.gpus || []).forEach(function (g, i) {
+      var util = D.clamp(g.util || 0, 0, 100);
+      var row = D.el('div', { class: 'gpu' });
+      row.innerHTML =
+        '<span class="gpu__i num">' + (g.i != null ? g.i : i) + '</span>' +
+        '<div class="meter' + tempClass(g.temp || 0) + '"><i style="width:' + (s._stale ? 0 : util) + '%"></i></div>' +
+        '<span class="gpu__v num">' + util + '%</span>' +
+        '<span class="gpu__t num">' + (g.temp != null ? g.temp : 0) + '°C</span>' +
+        '<span class="gpu__w num">' + Math.round(g.power_w || 0) + 'W</span>' +
+        '<span class="gpu__f num">' + (g.fan != null ? g.fan + '%' : '') + '</span>' +
+        '<span class="gpu__c num">' + (g.sm_mhz ? g.sm_mhz + ' MHz' : '') + '</span>' +
+        '<span class="gpu__m num">' + (g.mem_total_mb
+          ? (g.mem_used_mb / 1024).toFixed(1) + ' / ' + (g.mem_total_mb / 1024).toFixed(1) + ' G'
+          : '') + '</span>';
+      wrap.appendChild(row);
+    });
+    return wrap;
+  }
+
+  function paintRigs() {
+    if (!els.rigs) return;
+    var list = ids();
+    els.rigs.innerHTML = '';
+    if (!list.length) return;
+
+    list.forEach(function (id) {
+      var s = state.snaps[id];
+      var gpus = s.gpus || [];
+      var sum = gpuSummary(gpus);
+      var r = si(s._stale ? 0 : s.throughput_keys || 0);
+
+      var open = !!state.open[id];
+      var hw = gpus.length ? gpus.length + ' × ' + sum.model : 'no GPUs';
+      var title = 'RIG #' + rigNo(id) + ' - ' + hw;
+
+      var card = D.el('article', {
+        class: 'rig panel panel--cut' + (s._stale ? ' is-stale' : '') + (open ? ' is-open' : '')
+      });
+      card.innerHTML =
+        '<div class="panel__label">' +
+          '<span class="rig__id"><i class="dot" aria-hidden="true"></i><b>' + title + '</b></span>' +
+          (s._stale
+            ? '<span class="rig__hw">last seen ' + shortDur(s._age / 1000) + ' ago</span>'
+            : (gpus.length
+              ? '<button class="rig__toggle" type="button">' + (open ? 'Hide details' : 'Expand details') + '</button>'
+              : '')) +
+        '</div>' +
+        '<div class="rig__stats">' +
+          '<div><small>Throughput</small><b class="num blue">' + r.n + '<em>' + r.u + ' keys/s</em></b></div>' +
+          '<div><small>Power</small><b class="num">' + int(s._stale ? 0 : sum.watts) + '<em>W</em></b></div>' +
+          '<div><small>Hottest</small><b class="num">' + Math.round(sum.temp || 0) + '<em>°C</em></b></div>' +
+          '<div><small>Uptime</small><b class="num">' + shortDur(s.uptime_s || 0) + '</b></div>' +
+        '</div>';
+
+      if (open && gpus.length) {
+        var head = D.el('div', { class: 'gpu gpu--head' });
+        head.innerHTML = '<span>#</span><span></span><span>Util</span><span>Temp</span><span>Power</span><span>Fan</span><span>SM</span><span>VRAM</span>';
+        var listEl = gpuDetail(s);
+        listEl.insertBefore(head, listEl.firstChild);
+        card.appendChild(listEl);
+      }
+
+      var toggle = D.$('.rig__toggle', card);
+      if (toggle) {
+        toggle.addEventListener('click', function () {
+          state.open[id] = !state.open[id];
+          paintRigs();
+        });
+      }
+
+      els.rigs.appendChild(card);
+    });
+  }
+
+  function setText(el, t) { if (el) el.textContent = t; }
+  function setHTML(el, t) { if (el) el.innerHTML = t; }
+
+  function paint() {
+    var a = aggregate();
+    var r = si(a.rate);
+
+    setHTML(els.rate, r.n + '<em>' + r.u + ' keys/s</em>');
+    setText(els.gpus, a.gpus ? String(a.gpus) : '0');
+    setText(els.gpusSub, a.live.length + ' of ' + a.all.length + ' rigs reporting');
+    setText(els.wallets, int(a.rate));
+    setText(els.watts, a.watts ? int(a.watts) + ' W drawn' : '');
+    setText(els.stamp, a.newest
+      ? 'newest snapshot ' + shortDur((Date.now() - a.newest * 1000) / 1000) + ' old'
+      : 'no snapshot yet');
+
+    paintRigs();
+    if (els.empty) els.empty.hidden = a.all.length > 0;
+    drawSpark();
+  }
+
+  function tick() {
+    fetchAll().then(paint);
+  }
+
+  function start() {
+    if (state.timer) return;
+    tick();
+    state.timer = setInterval(function () {
+      if (document.hidden) return;
+      tick();
+    }, cfg().refreshMs || 15000);
+  }
+
+  D.initFleet = function () {
+    var section = D.$('[data-fleet]');
+    if (!section) return;
+
+    els.rate = D.$('[data-fleet-rate]', section);
+    els.gpus = D.$('[data-fleet-gpus]', section);
+    els.gpusSub = D.$('[data-fleet-nodes]', section);
+    els.wallets = D.$('[data-fleet-wallets]', section);
+    els.watts = D.$('[data-fleet-watts]', section);
+    els.stamp = D.$('[data-fleet-stamp]', section);
+    els.chartLabel = D.$('[data-fleet-chart-label]', section);
+    els.spark = D.$('[data-fleet-spark]', section);
+    els.rigs = D.$('[data-fleet-grid]', section);
+    els.empty = D.$('[data-fleet-empty]', section);
+
+    window.addEventListener('resize', D.debounce(drawSpark, 180));
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && state.onscreen) tick();
+    });
+
+    start();
+    D.onVisible(section, function (visible) {
+      state.onscreen = visible;
+    }, { threshold: 0 });
+  };
+}(window.D));
+
+/* ============================================================
+   modules/wallet-connect.js
+   Connect-only (no signing, no transactions): detects an injected
+   provider and requests the account address, purely for display.
+   MetaMask and Coinbase Wallet inject window.ethereum; Phantom
+   injects window.solana. Fails soft with an inline note when a
+   provider isn't installed or the request is rejected.
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  function evmProvider(flag) {
+    var eth = window.ethereum;
+    if (!eth) return null;
+    if (eth.providers) {
+      var match = eth.providers.filter(function (p) { return p[flag]; });
+      if (match.length) return match[0];
+    }
+    return eth[flag] ? eth : null;
+  }
+
+  var PROVIDERS = {
+    metamask: {
+      label: 'MetaMask',
+      installUrl: 'https://metamask.io/download/',
+      detect: function () { return !!evmProvider('isMetaMask'); },
+      connect: function () {
+        var eth = evmProvider('isMetaMask');
+        return eth.request({ method: 'eth_requestAccounts' }).then(function (accts) {
+          return accts[0];
+        });
+      }
+    },
+    coinbase: {
+      label: 'Coinbase Wallet',
+      installUrl: 'https://www.coinbase.com/wallet/downloads',
+      detect: function () { return !!evmProvider('isCoinbaseWallet'); },
+      connect: function () {
+        var eth = evmProvider('isCoinbaseWallet');
+        return eth.request({ method: 'eth_requestAccounts' }).then(function (accts) {
+          return accts[0];
+        });
+      }
+    },
+    phantom: {
+      label: 'Phantom',
+      installUrl: 'https://phantom.app/download',
+      detect: function () { return !!(window.solana && window.solana.isPhantom); },
+      connect: function () {
+        return window.solana.connect().then(function (resp) {
+          return resp.publicKey.toString();
+        });
+      }
+    }
+  };
+
+  var els = {};
+  var connected = null;
+
+  function shortAddr(a) {
+    return a.length > 12 ? a.slice(0, 6) + '…' + a.slice(-4) : a;
+  }
+
+  function setNote(msg) {
+    els.note.textContent = msg || '';
+    els.note.hidden = !msg;
+  }
+
+  function openMenu() {
+    els.menu.hidden = false;
+    els.btn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu() {
+    els.menu.hidden = true;
+    els.btn.setAttribute('aria-expanded', 'false');
+    setNote('');
+  }
+
+  function paint() {
+    els.btn.classList.toggle('is-connected', !!connected);
+    els.label.textContent = connected ? shortAddr(connected) : 'Connect Wallet';
+    els.picker.hidden = !!connected;
+    els.connectedPanel.hidden = !connected;
+    if (connected) els.full.textContent = connected;
+  }
+
+  function selectProvider(key) {
+    var p = PROVIDERS[key];
+    if (!p) return;
+    if (!p.detect()) {
+      setNote(p.label + ' was not detected in this browser or this frame. Install it, or open this page outside a sandboxed preview, then try again.');
+      return;
+    }
+    setNote('Requesting ' + p.label + '…');
+    p.connect().then(function (address) {
+      connected = address;
+      paint();
+      closeMenu();
+    }).catch(function (err) {
+      setNote((err && err.message) ? err.message : 'Connection was not approved.');
+    });
+  }
+
+  D.initWalletConnect = function () {
+    var root = D.$('[data-wc]');
+    if (!root) return;
+
+    els.btn = D.$('[data-wc-btn]', root);
+    els.menu = D.$('[data-wc-menu]', root);
+    els.label = D.$('[data-wc-label]', root);
+    els.note = D.$('[data-wc-note]', root);
+    els.picker = D.$('[data-wc-picker]', root);
+    els.connectedPanel = D.$('[data-wc-connected]', root);
+    els.full = D.$('[data-wc-full]', root);
+
+    els.btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (els.menu.hidden) openMenu(); else closeMenu();
+    });
+
+    D.$$('[data-wc-provider]', els.menu).forEach(function (btn) {
+      btn.addEventListener('click', function () { selectProvider(btn.getAttribute('data-wc-provider')); });
+    });
+
+    D.$('[data-wc-copy]', els.menu).addEventListener('click', function () {
+      D.copy(connected).then(function () { setNote('Address copied.'); });
+    });
+
+    D.$('[data-wc-disconnect]', els.menu).addEventListener('click', function () {
+      connected = null;
+      paint();
+      closeMenu();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!root.contains(e.target)) closeMenu();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeMenu();
+    });
+
+    paint();
+  };
+}(window.D));
+
+/* ============================================================
+   main.js
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  function boot() {
+    D.initUI();
+    D.initDecodeText();
+    D.initReveal();
+    D.initBoard();
+    D.initFleet();
+    D.initHeroField(D.$('[data-hero-canvas]'));
+    D.initKangaroo(D.$('[data-kangaroo]'), D.$('[data-kang-status]'), D.$('[data-kang-jumps]'));
+    D.initMarket();
+    D.initWalletConnect();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+}(window.D));
+</script>
+
+</body></html>
