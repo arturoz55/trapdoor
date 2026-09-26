@@ -66,7 +66,7 @@ trapdoor promises no solve, no payout and no date. It's a public experiment in t
 
 🔗 [SITE URL]
 📄 CA: [CONTRACT ADDRESS]
-𝕏 @Trygatepost
+𝕏 @Trytrapdoor
 
 *Not financial advice. Puzzle bounties can be claimed by anyone, at any time.*
 
