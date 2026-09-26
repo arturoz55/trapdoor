@@ -298,6 +298,7 @@ code, .mono, kbd {
 .xlink {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
   width: auto;
   padding: 0 13px;
@@ -1698,6 +1699,135 @@ code, .mono, kbd {
   .wallet { grid-template-columns: 1fr; }
 }
 
+/* ---------- interactive additions ---------- */
+.inline-target {
+  padding: 0;
+  color: var(--blue-hi);
+  font-weight: 500;
+  border-bottom: 1px dashed rgba(255, 143, 199, .5);
+  transition: color .2s, border-color .2s;
+}
+.inline-target:hover { color: var(--ink); border-bottom-color: var(--ink); }
+
+.section-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.sim {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  margin-top: 26px;
+}
+.sim__form {
+  display: grid;
+  gap: 16px;
+  padding: clamp(20px, 2.4vw, 28px);
+  border-right: 1px solid var(--line);
+}
+.sim__form .field output {
+  justify-self: end;
+  margin-top: -26px;
+  color: var(--blue-hi);
+  font: 500 12px/1 var(--font-mono);
+}
+.sim input[type=range] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  padding: 0;
+  height: 22px;
+  border: 0;
+  background: transparent;
+  accent-color: var(--blue);
+}
+.sim__out {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+}
+.sim__out > div {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.sim__out > div:nth-child(odd) { border-right: 1px solid var(--line); }
+.sim__out small {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink-4);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.sim__out b {
+  font-size: var(--step-1);
+  letter-spacing: -.03em;
+}
+.sim__out .sim__wide { grid-column: 1 / -1; border-right: 0; }
+.sim__verdict {
+  margin-top: 10px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.sim__foot {
+  grid-column: 1 / -1;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border: 1px solid var(--line-strong);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pill--live { color: var(--mint); border-color: rgba(93, 255, 176, .4); }
+.pill--off { color: var(--amber); border-color: rgba(232, 197, 71, .4); }
+.pill--off .dot { background: var(--amber); box-shadow: 0 0 0 3px rgba(232, 197, 71, .16); }
+
+.ctrl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+}
+
+.watch {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+}
+.watch__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ink-4);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.watch__body {
+  color: var(--ink-2);
+  font: 400 12.5px/1.55 var(--font-mono);
+}
+
+@media (max-width: 1080px) {
+  .sim { grid-template-columns: 1fr; }
+  .sim__form { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+
 @media (max-width: 720px) {
   .strip { grid-template-columns: 1fr 1fr; }
   .strip--fleet { grid-template-columns: 1fr 1fr; }
@@ -1880,7 +2010,7 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
         <h3>Five of them leaked the shape of the answer</h3>
         <p>
           An address is only a hash of a public key, so normally you learn nothing from it. But in May 2019
-            the creator spent 1,000 satoshis out of #140, #145, #150, #155 and #160, and a spend publishes
+            the creator spent 1,000 satoshis out of <button class="inline-target" type="button" data-open-target="140">#140</button>, <button class="inline-target" type="button" data-open-target="145">#145</button>, <button class="inline-target" type="button" data-open-target="150">#150</button>, <button class="inline-target" type="button" data-open-target="155">#155</button> and <button class="inline-target" type="button" data-open-target="160">#160</button>, and a spend publishes
             the public key. With that key in hand the hunt stops being a guessing game and becomes a
           computation: about <b>the square root</b> of the range instead of the whole range.
         </p>
@@ -1896,6 +2026,11 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
           shows exactly where every dollar went.
         </p>
       </article>
+    </div>
+
+    <div class="section-cta reveal">
+      <button class="btn btn--primary" type="button" data-board-go="computable">Show the five computable targets</button>
+      <button class="btn btn--ghost" type="button" data-open-target="140">Inspect puzzle #140</button>
     </div>
   </div>
 </section>
@@ -1961,6 +2096,62 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
         it is not shown at all.
       </span>
     </div>
+
+    <div class="panel panel--cut sim reveal" data-sim>
+      <div class="panel__label" style="grid-column:1/-1">
+        <span>Fee engine simulator &middot; what-if, not a forecast</span>
+        <button class="rig__toggle" type="button" data-sim-reset>Reset</button>
+      </div>
+
+      <div class="sim__form">
+        <div class="field">
+          <label for="sim-volume">Daily trading volume (USD)</label>
+          <output data-sim-out="volume"></output>
+          <input id="sim-volume" type="range" min="0" max="100" step="1" value="45" data-sim-in="volume">
+        </div>
+        <div class="field">
+          <label for="sim-fee">Fee routed to the wallet (%)</label>
+          <output data-sim-out="fee"></output>
+          <input id="sim-fee" type="range" min="0.25" max="5" step="0.25" value="1" data-sim-in="fee">
+        </div>
+        <div class="field">
+          <label for="sim-gpu">Rented GPU price (USD / hour)</label>
+          <output data-sim-out="gpu"></output>
+          <input id="sim-gpu" type="range" min="0.2" max="2" step="0.05" value="0.4" data-sim-in="gpu">
+        </div>
+        <div class="field">
+          <label for="sim-speed">Speed per GPU (G ops / s)</label>
+          <output data-sim-out="speed"></output>
+          <input id="sim-speed" type="range" min="1" max="12" step="0.5" value="6" data-sim-in="speed">
+        </div>
+        <div class="field">
+          <label for="sim-target">Target</label>
+          <select id="sim-target" data-sim-in="target"></select>
+        </div>
+      </div>
+
+      <div class="sim__out">
+        <div><small>Fees per day</small><b class="num" data-sim-res="fees">&ndash;</b></div>
+        <div><small>GPU-hours per day</small><b class="num" data-sim-res="hours">&ndash;</b></div>
+        <div><small>GPUs running 24/7</small><b class="num blue" data-sim-res="gpus">&ndash;</b></div>
+        <div><small>Fleet speed</small><b class="num" data-sim-res="rate">&ndash;</b></div>
+        <div class="sim__wide">
+          <small>Expected time to solve</small>
+          <b class="num mint" data-sim-res="time">&ndash;</b>
+          <p class="sim__verdict" data-sim-res="verdict"></p>
+        </div>
+        <div class="sim__wide">
+          <small>Chance of a solve within 12 months</small>
+          <b class="num" data-sim-res="odds">&ndash;</b>
+          <div class="meter meter--mint" style="margin-top:12px"><i data-sim-res="meter"></i></div>
+        </div>
+      </div>
+
+      <p class="tip sim__foot">
+        Expected work comes from the same formulas the board uses. Real runs land earlier or later than the
+        median, and GPU prices and speeds move. Treat every number here as an order of magnitude.
+      </p>
+    </div>
   </div>
 </section>
 
@@ -1998,7 +2189,11 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
     <div class="panel panel--cut fleet__chart">
       <div class="panel__label">
         <span data-fleet-chart-label>Fleet throughput</span>
-        <span data-fleet-stamp></span>
+        <span style="display:inline-flex;align-items:center;gap:12px">
+          <span data-fleet-stamp></span>
+          <span class="pill pill--off" data-fleet-status><i class="dot"></i><span>checking</span></span>
+          <button class="rig__toggle" type="button" data-fleet-refresh>Refresh</button>
+        </span>
       </div>
       <div class="fleet__spark">
         <canvas data-fleet-spark aria-label="Line chart of total fleet throughput since this page was opened"></canvas>
@@ -2007,9 +2202,16 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
 
     <div class="fleet__grid" data-fleet-grid></div>
 
-    <p class="tip" data-fleet-empty hidden>
-      No rig has reported yet. Rows appear here within seconds of an agent starting on a box.
-    </p>
+    <div class="flow__note" data-fleet-empty hidden style="margin-top:14px">
+      <span class="dot" style="flex:none;margin-top:8px;background:var(--amber);box-shadow:0 0 0 3px rgba(232,197,71,.16)"></span>
+      <span>
+        <b>No rig is reporting yet.</b> The fleet only shows readings that the machines publish themselves, so until
+        the first box comes online these counters stay at zero instead of showing an invented number. Rows appear
+        here within seconds of an agent starting. Until then, the
+        <a class="link-arrow" href="#engine">fee engine simulator</a> shows what a given fee stream would buy, and
+        launches are announced on <a class="link-arrow" data-social-x href="#" target="_blank" rel="noopener"><span data-x-handle>@trapdoor</span> &nearr;</a>
+      </span>
+    </div>
   </div>
 </section>
 
@@ -2074,6 +2276,11 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
           <span><i style="background:#4a1830;border-radius:0"></i> stored distinguished point</span>
           <span>status: <b data-kang-status class="blue">herds walking</b></span>
         </div>
+        <div class="ctrl">
+          <button class="chip" type="button" data-kang-toggle>Pause</button>
+          <button class="chip" type="button" data-kang-speed>Speed 1&times;</button>
+          <button class="chip" type="button" data-kang-restart>New herds</button>
+        </div>
       </div>
 
       <div class="kang__copy reveal" data-delay="1">
@@ -2091,7 +2298,7 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
         </p>
         <p>
           #135 fell exactly this way in July 2026, after the solver known as RetiredCoder spent about five
-          months on 200 GPUs. #140 is the next rung on the same ladder, and it is where trapdoor starts.
+          months on 200 GPUs. <button class="inline-target" type="button" data-open-target="140">#140</button> is the next rung on the same ladder, and it is where trapdoor starts.
         </p>
 
         <div class="contrast">
@@ -2156,7 +2363,10 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
       </li>
       <li class="reveal">
         <time>Today</time>
-        <p>#140 is the lowest unsolved target with an exposed public key. 77 puzzles remain, holding 903 BTC between them.</p>
+        <div>
+          <p><button class="inline-target" type="button" data-open-target="140">#140</button> is the lowest unsolved target with an exposed public key. 77 puzzles remain, holding 903 BTC between them.</p>
+          <p class="tip" style="margin-top:8px" data-watch-mirror>Live check of #140 loading&hellip;</p>
+        </div>
       </li>
     </ul>
 
@@ -2195,6 +2405,24 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
             <div><span>First target</span><b>Puzzle #140, 14 BTC</b></div>
             <div hidden data-needs-token><span>Token</span><b></b></div>
         </div>
+
+        <div class="watch" data-watch>
+          <div class="watch__head">
+            <span>Solve watch &middot; puzzle #140</span>
+            <span class="pill" data-watch-pill><i class="dot"></i><span>checking</span></span>
+          </div>
+          <p class="watch__body" data-watch-body>Asking a public Bitcoin node whether the 14 BTC is still there&hellip;</p>
+          <div class="chips">
+            <button class="chip" type="button" data-watch-refresh>Check again</button>
+            <a class="chip" href="https://mempool.space/address/1QKBaU6WAeycb3DbKbLBkX7vJiaS8r42Xo" target="_blank" rel="noopener">mempool.space &nearr;</a>
+            <a class="chip" data-explorer hidden target="_blank" rel="noopener">Wallet explorer &nearr;</a>
+          </div>
+        </div>
+
+        <div class="section-cta" style="margin-top:18px">
+          <a class="btn btn--primary btn--sm" data-share-x href="#" target="_blank" rel="noopener">Share on X</a>
+          <a class="btn btn--ghost btn--sm" data-social-x href="#" target="_blank" rel="noopener">Follow <span data-x-handle>@trapdoor</span></a>
+        </div>
       </div>
 
       <div class="panel panel--cut panel--pad reveal" data-delay="1">
@@ -2227,7 +2455,10 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
         <span class="eyebrow">Questions</span>
         <h2 data-decode>The obvious objections.</h2>
       </div>
-      <p>Answered directly, including the ones without a comfortable answer.</p>
+      <div>
+        <p>Answered directly, including the ones without a comfortable answer.</p>
+        <button class="btn btn--ghost btn--sm" type="button" data-qa-all style="margin-top:16px">Expand all</button>
+      </div>
     </div>
 
     <div class="qa">
@@ -2315,6 +2546,7 @@ Fees &rarr; Compute &rarr; Search &rarr; Match
           <a href="#board">The board</a>
           <a href="#history">Track record</a>
           <a data-social-x href="#" target="_blank" rel="noopener"><span data-x-handle>@trapdoor</span> on X &nearr;</a>
+          <a data-share-x href="#" target="_blank" rel="noopener">Share trapdoor &nearr;</a>
         </div>
       </div>
 
@@ -3232,9 +3464,11 @@ window.D = window.D || {};
       var dt = Math.min(64, now - last);
       last = now;
 
-      if (phase === 'run') {
+      if (paused) {
+        /* hold the frame */
+      } else if (phase === 'run') {
         herds.forEach(function (herd) {
-          herd.t += dt / HOP_MS;
+          herd.t += dt * speed / HOP_MS;
           while (herd.t >= 1 && phase === 'run') {
             herd.t -= 1;
             advance(herd);
@@ -3257,13 +3491,40 @@ window.D = window.D || {};
       if (raf) { cancelAnimationFrame(raf); raf = null; }
     }
 
+    var paused = false;
+    var speed = 1;
+    var onscreen = false;
+
+    function run() {
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+    }
+
+    D.kangaroo = {
+      toggle: function () {
+        paused = !paused;
+        if (!paused && (onscreen || D.reducedMotion())) run();
+        return paused;
+      },
+      cycleSpeed: function () {
+        speed = speed === 1 ? 3 : speed === 3 ? 8 : 1;
+        return speed;
+      },
+      restart: function () {
+        reset();
+        paused = false;
+        paint(performance.now());
+        run();
+      }
+    };
+
     reset();
     paint(performance.now());
 
     if (D.reducedMotion()) return;
 
     D.onVisible(canvas, function (visible) {
-      if (visible && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+      onscreen = visible;
+      if (visible) run();
       if (!visible) stopLoop();
     }, { threshold: .2 });
 
@@ -3491,6 +3752,14 @@ window.D = window.D || {};
     D.$$('[data-open-target]').forEach(function (btn) {
       btn.addEventListener('click', function () { open(parseInt(btn.getAttribute('data-open-target'), 10)); });
     });
+
+    D.boardFilter = function (id) {
+      state.filter = filterOf(id).id;
+      D.$$('.chip', nodes.chips).forEach(function (c) {
+        c.classList.toggle('is-on', c.getAttribute('data-filter') === state.filter);
+      });
+      render();
+    };
 
     render();
   };
@@ -3770,6 +4039,11 @@ window.D = window.D || {};
 
     paintRigs();
     if (els.empty) els.empty.hidden = a.all.length > 0;
+    if (els.status) {
+      var live = a.live.length > 0;
+      els.status.className = 'pill ' + (live ? 'pill--live' : 'pill--off');
+      els.status.lastChild.textContent = live ? 'live' : (a.all.length ? 'stale' : 'offline');
+    }
     drawSpark();
   }
 
@@ -3800,6 +4074,13 @@ window.D = window.D || {};
     els.spark = D.$('[data-fleet-spark]', section);
     els.rigs = D.$('[data-fleet-grid]', section);
     els.empty = D.$('[data-fleet-empty]', section);
+    els.status = D.$('[data-fleet-status]', section);
+
+    var refresh = D.$('[data-fleet-refresh]', section);
+    if (refresh) refresh.addEventListener('click', function () {
+      refresh.textContent = 'Checking…';
+      fetchAll().then(paint).then(function () { refresh.textContent = 'Refresh'; });
+    });
 
     window.addEventListener('resize', D.debounce(drawSpark, 180));
     document.addEventListener('visibilitychange', function () {
@@ -3960,6 +4241,226 @@ window.D = window.D || {};
 }(window.D));
 
 /* ============================================================
+   modules/actions.js
+   Fee-engine simulator, solve watch, share links, FAQ expand-all,
+   and the buttons that jump into the board.
+   ============================================================ */
+(function (D) {
+  'use strict';
+
+  var KS = D.keyspace;
+
+  /* ---------- fee engine simulator ---------- */
+
+  // Slider 0..100 maps onto $1K..$100M on a log scale.
+  function volumeFromSlider(v) { return Math.pow(10, 3 + (v / 100) * 5); }
+
+  function money(v) {
+    if (v >= 1e6) return '$' + (v / 1e6).toFixed(v >= 1e7 ? 1 : 2) + 'M';
+    if (v >= 1e3) return '$' + (v / 1e3).toFixed(v >= 1e4 ? 0 : 1) + 'K';
+    return '$' + Math.round(v).toLocaleString('en-US');
+  }
+
+  function rate(v) {
+    var units = [[1e15, 'P'], [1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'K']];
+    for (var i = 0; i < units.length; i++) {
+      if (v >= units[i][0]) return (v / units[i][0]).toFixed(v / units[i][0] >= 100 ? 0 : 1) + ' ' + units[i][1] + 'ops/s';
+    }
+    return Math.round(v) + ' ops/s';
+  }
+
+  function duration(sec) {
+    if (!isFinite(sec)) return 'never, at this spend';
+    var day = 86400, year = day * 365.25;
+    if (sec < day) return (sec / 3600).toFixed(1) + ' hours';
+    if (sec < 90 * day) return Math.round(sec / day) + ' days';
+    if (sec < 3 * year) return (sec / (30.44 * day)).toFixed(1) + ' months';
+    if (sec < 1e4 * year) return Math.round(sec / year).toLocaleString('en-US') + ' years';
+    return D.sci(sec / year).mantissa + ' × 10^' + D.sci(sec / year).exp + ' years';
+  }
+
+  function initSim() {
+    var root = D.$('[data-sim]');
+    if (!root) return;
+
+    var inputs = {};
+    D.$$('[data-sim-in]', root).forEach(function (el) { inputs[el.getAttribute('data-sim-in')] = el; });
+    var out = {};
+    D.$$('[data-sim-out]', root).forEach(function (el) { out[el.getAttribute('data-sim-out')] = el; });
+    var res = {};
+    D.$$('[data-sim-res]', root).forEach(function (el) { res[el.getAttribute('data-sim-res')] = el; });
+
+    var targets = (window.DECODED_TARGETS || []).filter(function (t) { return t.pubkey || t.n === 71; });
+    targets.forEach(function (t) {
+      var o = document.createElement('option');
+      o.value = String(t.n);
+      o.textContent = '#' + t.n + ' · ' + KS.bounty(t.n).toFixed(1) + ' BTC · ' + (t.pubkey ? 'Kangaroo' : 'brute force');
+      inputs.target.appendChild(o);
+    });
+    var primary = String((window.DECODED_CONFIG && window.DECODED_CONFIG.primaryTarget) || 140);
+    var defaults = {};
+    Object.keys(inputs).forEach(function (k) { defaults[k] = k === 'target' ? primary : inputs[k].value; });
+    inputs.target.value = primary;
+
+    function update() {
+      var volume = volumeFromSlider(+inputs.volume.value);
+      var fee = +inputs.fee.value / 100;
+      var gpuPrice = +inputs.gpu.value;
+      var perGpu = +inputs.speed.value * 1e9;
+      var n = parseInt(inputs.target.value, 10);
+      var t = targets.filter(function (x) { return x.n === n; })[0];
+
+      out.volume.textContent = money(volume);
+      out.fee.textContent = inputs.fee.value + '%';
+      out.gpu.textContent = '$' + gpuPrice.toFixed(2);
+      out.speed.textContent = inputs.speed.value + ' G';
+
+      var fees = volume * fee;
+      var hours = fees / gpuPrice;
+      var gpus = hours / 24;
+      var fleet = gpus * perGpu;
+      var work = KS.work(t);
+      var secs = fleet > 0 ? work.ops / fleet : Infinity;
+      var year = 365.25 * 86400;
+      // Chance of finishing inside a year, modelling the solve time as exponential around the median.
+      var odds = 1 - Math.exp(-year / secs);
+
+      res.fees.textContent = money(fees);
+      res.hours.textContent = Math.round(hours).toLocaleString('en-US');
+      res.gpus.textContent = gpus >= 10 ? Math.round(gpus).toLocaleString('en-US') : gpus.toFixed(1);
+      res.rate.textContent = rate(fleet);
+      res.time.textContent = duration(secs);
+      res.odds.textContent = odds >= .001 ? (odds * 100).toFixed(odds >= .1 ? 0 : 1) + '%' : '< 0.1%';
+      res.meter.style.width = Math.max(0, Math.min(100, odds * 100)) + '%';
+      res.verdict.innerHTML = '#' + n + ' needs about ' + D.sciHTML(work.ops) + ' ' + work.unit
+        + ' with ' + work.label + '. The bounty is ' + KS.bounty(n).toFixed(1) + ' BTC'
+        + '<span class="usd-slot" data-btc="' + KS.bounty(n) + '"></span>.';
+      if (D.paintUSD) D.paintUSD();
+    }
+
+    Object.keys(inputs).forEach(function (k) {
+      inputs[k].addEventListener('input', update);
+      inputs[k].addEventListener('change', update);
+    });
+    D.$('[data-sim-reset]', root).addEventListener('click', function () {
+      Object.keys(defaults).forEach(function (k) { inputs[k].value = defaults[k]; });
+      update();
+    });
+    update();
+  }
+
+  /* ---------- solve watch for the primary target ---------- */
+
+  function initWatch() {
+    var root = D.$('[data-watch]');
+    var mirror = D.$('[data-watch-mirror]');
+    if (!root) return;
+    var cfg = window.DECODED_CONFIG;
+    var n = cfg.primaryTarget || 140;
+    var t = (window.DECODED_TARGETS || []).filter(function (x) { return x.n === n; })[0];
+    if (!t) return;
+
+    var pill = D.$('[data-watch-pill]', root);
+    var body = D.$('[data-watch-body]', root);
+    var btn = D.$('[data-watch-refresh]', root);
+
+    function set(state, label, text) {
+      pill.className = 'pill' + (state === 'live' ? ' pill--live' : state === 'off' ? ' pill--off' : '');
+      pill.lastChild.textContent = label;
+      body.innerHTML = text;
+      if (mirror) mirror.innerHTML = text;
+    }
+
+    function check() {
+      set('', 'checking', 'Asking a public Bitcoin node whether the ' + KS.bounty(n) + ' BTC is still there…');
+      D.getJSON(cfg.api.address + t.address).then(function (data) {
+        var bal = (data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum) / 1e8;
+        var time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        if (bal >= KS.bounty(n) * .9) {
+          set('live', 'unsolved', '<b class="mint">' + bal.toFixed(4) + ' BTC</b> still unspent at #' + n
+            + '. Nobody has the key yet. Checked ' + time + '.');
+        } else {
+          set('off', 'moved', '<b class="blue">' + bal.toFixed(4) + ' BTC</b> left at #' + n
+            + '. The coins have moved, so someone found the key. Checked ' + time + '.');
+        }
+      }).catch(function () {
+        set('off', 'unreachable', 'The public node did not answer. Check the address on mempool.space directly.');
+      });
+    }
+
+    btn.addEventListener('click', check);
+    check();
+    setInterval(function () { if (!document.hidden) check(); }, 120000);
+
+    var explorer = D.$('[data-explorer]', root);
+    if (explorer && cfg.explorerAddressBase) {
+      explorer.href = cfg.explorerAddressBase + cfg.devWallet;
+      explorer.hidden = false;
+    }
+  }
+
+  /* ---------- small wiring ---------- */
+
+  function initShare() {
+    var text = '77 unsolved Bitcoin puzzles. 903 BTC locked behind unknown keys. '
+      + 'trapdoor turns trading fees into GPU compute and points it at them, in public.';
+    var url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text)
+      + '&url=' + encodeURIComponent(location.href.split('#')[0]);
+    D.$$('[data-share-x]').forEach(function (a) { a.href = url; });
+  }
+
+  function initBoardJumps() {
+    D.$$('[data-board-go]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (D.boardFilter) D.boardFilter(btn.getAttribute('data-board-go'));
+        var board = document.getElementById('board');
+        if (board) board.scrollIntoView({ behavior: D.reducedMotion() ? 'auto' : 'smooth' });
+      });
+    });
+  }
+
+  function initFaqAll() {
+    var btn = D.$('[data-qa-all]');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var items = D.$$('.qa');
+      var open = items.some(function (q) { return !q.classList.contains('is-open'); });
+      items.forEach(function (q) {
+        q.classList.toggle('is-open', open);
+        D.$('.qa__q', q).setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      btn.textContent = open ? 'Collapse all' : 'Expand all';
+    });
+  }
+
+  function initKangarooControls() {
+    if (!D.kangaroo) return;
+    var toggle = D.$('[data-kang-toggle]');
+    var speed = D.$('[data-kang-speed]');
+    var restart = D.$('[data-kang-restart]');
+    if (toggle) toggle.addEventListener('click', function () {
+      toggle.textContent = D.kangaroo.toggle() ? 'Play' : 'Pause';
+    });
+    if (speed) speed.addEventListener('click', function () {
+      speed.textContent = 'Speed ' + D.kangaroo.cycleSpeed() + '×';
+    });
+    if (restart) restart.addEventListener('click', function () {
+      D.kangaroo.restart();
+      if (toggle) toggle.textContent = 'Pause';
+    });
+  }
+
+  D.initActions = function () {
+    initSim();
+    initWatch();
+    initShare();
+    initBoardJumps();
+    initFaqAll();
+    initKangarooControls();
+  };
+}(window.D));
+
+/* ============================================================
    main.js
    ============================================================ */
 (function (D) {
@@ -3975,6 +4476,7 @@ window.D = window.D || {};
     D.initKangaroo(D.$('[data-kangaroo]'), D.$('[data-kang-status]'), D.$('[data-kang-jumps]'));
     D.initMarket();
     D.initWalletConnect();
+    D.initActions();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
