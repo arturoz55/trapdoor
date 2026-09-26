@@ -3982,4 +3982,87 @@ window.D = window.D || {};
 }(window.D));
 </script>
 
+<!-- ============================ cookie consent ============================ -->
+<style>
+.cc {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(2, 4, 8, .72);
+  backdrop-filter: blur(8px);
+}
+.cc[hidden] { display: none; }
+.cc__box {
+  width: min(460px, 100%);
+  padding: clamp(22px, 3vw, 30px);
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(170deg, rgba(24, 10, 19, .98), rgba(13, 5, 9, .98));
+  box-shadow: var(--shadow);
+  clip-path: var(--cut);
+}
+.cc__box h2 {
+  margin: 0 0 12px;
+  font-size: var(--step-2);
+}
+.cc__box p {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.cc__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+.cc__actions .btn { flex: 1 1 160px; }
+html.cc-lock, html.cc-lock body { overflow: hidden; }
+</style>
+
+<div class="cc" data-cc role="dialog" aria-modal="true" aria-labelledby="cc-title" hidden>
+  <div class="cc__box">
+    <span class="eyebrow">Cookies</span>
+    <h2 id="cc-title">Before you enter</h2>
+    <p>
+      trapdoor uses cookies and local storage to keep the site working, remember your wallet
+      connection and load live prices. You need to accept them to continue.
+    </p>
+    <div class="cc__actions">
+      <button class="btn btn--primary" type="button" data-cc-accept="all">Accept all</button>
+      <button class="btn btn--ghost" type="button" data-cc-accept="essential">Essential only</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var KEY = 'trapdoor-cookie-consent';
+  var box = document.querySelector('[data-cc]');
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (!saved && document.cookie.indexOf(KEY + '=') !== -1) saved = 'cookie';
+  if (saved) return;
+
+  var root = document.documentElement;
+  var main = document.getElementById('main');
+  box.hidden = false;
+  root.classList.add('cc-lock');
+  if (main) main.setAttribute('inert', '');
+  box.querySelector('[data-cc-accept]').focus();
+
+  box.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-cc-accept]');
+    if (!btn) return;
+    try { localStorage.setItem(KEY, btn.getAttribute('data-cc-accept')); } catch (e) {}
+    document.cookie = KEY + '=' + btn.getAttribute('data-cc-accept') + '; max-age=31536000; path=/; SameSite=Lax';
+    box.hidden = true;
+    root.classList.remove('cc-lock');
+    if (main) main.removeAttribute('inert');
+  });
+}());
+</script>
+
 </body></html>
